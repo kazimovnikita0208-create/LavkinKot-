@@ -16,24 +16,24 @@ const categoryNames: Record<string, string> = {
 // Mock данные для разных категорий со стильными изображениями
 const mockShops: Record<string, any[]> = {
   stores: [
-    { id: '1', name: 'Продуктовый "У дома"', category: 'Продукты · Напитки', rating: 4.8, reviewCount: 850, time: '15-25 мин', image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800&h=600&fit=crop&q=80', discount: '-15%', cashback: 'BACK200', delivery: 'Бесплатная доставка' },
-    { id: '2', name: 'Магазин "Свежесть"', category: 'Продукты · Фрукты', rating: 4.6, reviewCount: 620, time: '20-30 мин', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=600&fit=crop&q=80', delivery: 'Бесплатная доставка' },
-    { id: '3', name: 'Супермаркет "Находка"', category: 'Продукты · Деликатесы', rating: 4.9, reviewCount: 1200, time: '25-35 мин', image: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&h=600&fit=crop&q=80', cashback: 'BACK300', delivery: 'Бесплатная доставка' },
+    { id: '1', name: 'Продуктовый "У дома"', category: 'Продукты · Напитки', rating: 4.8, reviewCount: 850, time: '15-25 мин', image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800&h=600&fit=crop&q=80', discount: '-15%', cashback: 'BACK200' },
+    { id: '2', name: 'Магазин "Свежесть"', category: 'Продукты · Фрукты', rating: 4.6, reviewCount: 620, time: '20-30 мин', image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&h=600&fit=crop&q=80' },
+    { id: '3', name: 'Супермаркет "Находка"', category: 'Продукты · Деликатесы', rating: 4.9, reviewCount: 1200, time: '25-35 мин', image: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&h=600&fit=crop&q=80', cashback: 'BACK300' },
   ],
   bakeries: [
-    { id: '1', name: 'Пекарня "Хлебница"', category: 'Выпечка · Хлеб', rating: 4.9, reviewCount: 1100, time: '20-30 мин', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&h=600&fit=crop&q=80', discount: '-25%', cashback: 'BACK400', delivery: 'Бесплатная доставка' },
-    { id: '2', name: 'Булочная "Свежий хлеб"', category: 'Выпечка · Десерты', rating: 4.7, reviewCount: 890, time: '15-25 мин', image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&h=600&fit=crop&q=80', delivery: 'Бесплатная доставка' },
-    { id: '3', name: 'Пироговая "Вкуснотища"', category: 'Пироги · Торты', rating: 4.8, reviewCount: 1050, time: '25-35 мин', image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&h=600&fit=crop&q=80', discount: '-20%', delivery: 'Бесплатная доставка' },
+    { id: '1', name: 'Пекарня "Хлебница"', category: 'Выпечка · Хлеб', rating: 4.9, reviewCount: 1100, time: '20-30 мин', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=800&h=600&fit=crop&q=80', discount: '-25%', cashback: 'BACK400' },
+    { id: '2', name: 'Булочная "Свежий хлеб"', category: 'Выпечка · Десерты', rating: 4.7, reviewCount: 890, time: '15-25 мин', image: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&h=600&fit=crop&q=80' },
+    { id: '3', name: 'Пироговая "Вкуснотища"', category: 'Пироги · Торты', rating: 4.8, reviewCount: 1050, time: '25-35 мин', image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&h=600&fit=crop&q=80', discount: '-20%' },
   ],
   fruits: [
-    { id: '1', name: 'Фруктовый рай', category: 'Фрукты · Овощи', rating: 4.7, reviewCount: 920, time: '25-35 мин', image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=800&h=600&fit=crop&q=80', discount: '-20%', delivery: 'Бесплатная доставка' },
-    { id: '2', name: 'Свежие фрукты', category: 'Фрукты · Ягоды', rating: 4.6, reviewCount: 750, time: '30-40 мин', image: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&h=600&fit=crop&q=80', cashback: 'BACK250', delivery: 'Бесплатная доставка' },
-    { id: '3', name: 'Овощная лавка', category: 'Овощи · Зелень', rating: 4.8, reviewCount: 1100, time: '20-30 мин', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&h=600&fit=crop&q=80', delivery: 'Бесплатная доставка' },
+    { id: '1', name: 'Фруктовый рай', category: 'Фрукты · Овощи', rating: 4.7, reviewCount: 920, time: '25-35 мин', image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=800&h=600&fit=crop&q=80', discount: '-20%' },
+    { id: '2', name: 'Свежие фрукты', category: 'Фрукты · Ягоды', rating: 4.6, reviewCount: 750, time: '30-40 мин', image: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&h=600&fit=crop&q=80', cashback: 'BACK250' },
+    { id: '3', name: 'Овощная лавка', category: 'Овощи · Зелень', rating: 4.8, reviewCount: 1100, time: '20-30 мин', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=800&h=600&fit=crop&q=80' },
   ],
   restaurants: [
-    { id: '1', name: 'ROSTIC\'S', category: 'Фастфуд, Бургеры, Десерты, Ланчи', rating: 4.6, reviewCount: 1100, time: '35-45 мин', image: 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=800&h=600&fit=crop&q=80', discount: '-400₽', cashback: 'BACK400', delivery: 'Бесплатная доставка' },
-    { id: '2', name: 'Вкусная - и точка', category: 'Бургеры, Завтраки, Фастфуд, Кофе', rating: 4.4, reviewCount: 3700, time: '40-50 мин', image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&h=600&fit=crop&q=80', discount: '-400₽', cashback: 'BACK400', delivery: 'Бесплатная доставка' },
-    { id: '3', name: 'Суши-бар Токио', category: 'Суши · Роллы', rating: 4.8, reviewCount: 980, time: '35-45 мин', image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800&h=600&fit=crop&q=80', discount: '-30%', delivery: 'Бесплатная доставка' },
+    { id: '1', name: 'ROSTIC\'S', category: 'Фастфуд, Бургеры, Десерты, Ланчи', rating: 4.6, reviewCount: 1100, time: '35-45 мин', image: 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=800&h=600&fit=crop&q=80', discount: '-400₽', cashback: 'BACK400' },
+    { id: '2', name: 'Вкусная - и точка', category: 'Бургеры, Завтраки, Фастфуд, Кофе', rating: 4.4, reviewCount: 3700, time: '40-50 мин', image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=800&h=600&fit=crop&q=80', discount: '-400₽', cashback: 'BACK400' },
+    { id: '3', name: 'Суши-бар Токио', category: 'Суши · Роллы', rating: 4.8, reviewCount: 980, time: '35-45 мин', image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800&h=600&fit=crop&q=80', discount: '-30%' },
   ],
 };
 
@@ -315,7 +315,7 @@ export default function CategoryPage() {
                   {shop.category}
                 </p>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: shop.delivery ? 10 : 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Star style={{ width: 14, height: 14, color: '#F4A261', fill: '#F4A261' }} strokeWidth={2} />
                     <span style={{ 
@@ -347,25 +347,6 @@ export default function CategoryPage() {
                     </span>
                   </div>
                 </div>
-
-                {shop.delivery && (
-                  <div style={{
-                    padding: '6px 10px',
-                    borderRadius: 8,
-                    background: 'rgba(244, 162, 97, 0.1)',
-                    border: '1px solid rgba(244, 162, 97, 0.2)',
-                    display: 'inline-block',
-                  }}>
-                    <span style={{ 
-                      fontSize: 11, 
-                      color: '#F4A261',
-                      fontWeight: 700,
-                      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
-                    }}>
-                      {shop.delivery}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
           ))}
