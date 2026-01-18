@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle, Home, Package, Clock, MapPin, CreditCard, Sparkles } from 'lucide-react';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
@@ -16,7 +17,7 @@ const planDetails: { [key: string]: { deliveries: number; days: number } } = {
   'premium': { deliveries: 10, days: 60 },
 };
 
-export default function OrderConfirmedPage() {
+function OrderConfirmedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -545,5 +546,31 @@ export default function OrderConfirmedPage() {
       </main>
       
     </div>
+  );
+}
+
+export default function OrderConfirmedPage() {
+  return (
+    <Suspense fallback={
+      <div className="w-full max-w-[375px] min-h-screen mx-auto" style={{ 
+        backgroundColor: '#1A2F3A',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <AnimatedBackground />
+        <div style={{ 
+          color: '#F4A261', 
+          fontSize: 18, 
+          fontWeight: 700,
+          position: 'relative',
+          zIndex: 10,
+        }}>
+          Загрузка...
+        </div>
+      </div>
+    }>
+      <OrderConfirmedContent />
+    </Suspense>
   );
 }

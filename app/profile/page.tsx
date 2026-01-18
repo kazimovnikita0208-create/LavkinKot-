@@ -44,7 +44,17 @@ export default function ProfilePage() {
   };
 
   // Mock данные заказов
-  const allOrders = [
+  const allOrders: Array<{
+    id: string;
+    orderNumber: string;
+    shop: string;
+    date: string;
+    time: string;
+    total: number;
+    status: 'preparing' | 'in_transit' | 'delivered' | 'cancelled';
+    statusText: string;
+    items: number;
+  }> = [
     {
       id: '1',
       orderNumber: '123456',
@@ -52,7 +62,7 @@ export default function ProfilePage() {
       date: '2026-01-15',
       time: '12:00',
       total: 1613.20,
-      status: 'in_transit' as const,
+      status: 'in_transit',
       statusText: 'В пути',
       items: 3,
     },
@@ -63,7 +73,7 @@ export default function ProfilePage() {
       date: '2026-01-14',
       time: '18:30',
       total: 2450.00,
-      status: 'preparing' as const,
+      status: 'preparing',
       statusText: 'Готовится',
       items: 5,
     },

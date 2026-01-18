@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, CreditCard, Smartphone, CheckCircle } from 'lucide-react';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
@@ -11,7 +11,7 @@ const planNames: { [key: string]: string } = {
   'premium': 'Премиум',
 };
 
-export default function PaymentPage() {
+function PaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -742,5 +742,31 @@ export default function PaymentPage() {
       </div>
       
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={
+      <div className="w-full max-w-[375px] min-h-screen mx-auto" style={{ 
+        backgroundColor: '#1A2F3A',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <AnimatedBackground />
+        <div style={{ 
+          color: '#F4A261', 
+          fontSize: 18, 
+          fontWeight: 700,
+          position: 'relative',
+          zIndex: 10,
+        }}>
+          Загрузка...
+        </div>
+      </div>
+    }>
+      <PaymentContent />
+    </Suspense>
   );
 }

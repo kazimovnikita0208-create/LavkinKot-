@@ -118,7 +118,7 @@ export default function PartnerProductsPage() {
         inStock: true,
       };
       setProducts([...products, product]);
-      setNewProduct({ name: '', category: categories[0]?.name || '', price: '', oldPrice: '', weight: '', description: '' });
+      setNewProduct({ name: '', category: categories[0]?.name || '', price: '', oldPrice: '', weight: '', description: '', image: '' });
       setShowAddProductModal(false);
     }
   };
