@@ -38,6 +38,9 @@ export default function CheckoutPage() {
   // Опции
   const [leaveAtDoor, setLeaveAtDoor] = useState(false);
   
+  // Отслеживание фокуса на полях ввода (для управления нижней панелью)
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  
   // Подписка (mock)
   const [hasActiveSubscription, setHasActiveSubscription] = useState(true);
   const [subscriptionDeliveries, setSubscriptionDeliveries] = useState(3);
@@ -91,7 +94,7 @@ export default function CheckoutPage() {
     : orderTotal;
 
   return (
-    <div className="w-full max-w-[375px] min-h-screen mx-auto" style={{ backgroundColor: '#1A2F3A', position: 'relative', paddingBottom: 180 }}>
+    <div className="w-full max-w-[375px] min-h-screen mx-auto" style={{ backgroundColor: '#1A2F3A', position: 'relative', paddingBottom: isInputFocused ? 50 : 180 }}>
       
       {/* Анимированный фон */}
       <AnimatedBackground />
@@ -241,6 +244,8 @@ export default function CheckoutPage() {
                 type="text"
                 value={street}
                 onChange={(e) => setStreet(e.target.value)}
+                onFocus={() => setIsInputFocused(true)}
+                onBlur={() => setIsInputFocused(false)}
                 placeholder="Введите название улицы"
                 style={{
                   width: '100%',
@@ -274,6 +279,8 @@ export default function CheckoutPage() {
                   type="text"
                   value={house}
                   onChange={(e) => setHouse(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
                   placeholder="№"
                   style={{
                     width: '100%',
@@ -304,6 +311,8 @@ export default function CheckoutPage() {
                   type="text"
                   value={apartment}
                   onChange={(e) => setApartment(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
                   placeholder="№"
                   style={{
                     width: '100%',
@@ -338,6 +347,8 @@ export default function CheckoutPage() {
                   type="text"
                   value={entrance}
                   onChange={(e) => setEntrance(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
                   placeholder="№"
                   style={{
                     width: '100%',
@@ -368,6 +379,8 @@ export default function CheckoutPage() {
                   type="text"
                   value={floor}
                   onChange={(e) => setFloor(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
                   placeholder="№"
                   style={{
                     width: '100%',
@@ -747,6 +760,8 @@ export default function CheckoutPage() {
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
               placeholder="+7 (___) ___-__-__"
               style={{
                 width: '100%',
@@ -845,7 +860,7 @@ export default function CheckoutPage() {
       {/* НИЖНЯЯ ПАНЕЛЬ С ИТОГОМ */}
       <div style={{
         position: 'fixed',
-        bottom: 0,
+        bottom: isInputFocused ? -200 : 0,
         left: '50%',
         transform: 'translateX(-50%)',
         width: '100%',
@@ -857,6 +872,8 @@ export default function CheckoutPage() {
         borderTop: '1px solid rgba(244, 162, 97, 0.2)',
         boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.4)',
         padding: '16px',
+        transition: 'bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        opacity: isInputFocused ? 0 : 1,
       }}>
         
         {/* Итоговая информация */}
