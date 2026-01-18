@@ -1,0 +1,16 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE5D0"/>
+      <stop offset="100%" stop-color="#FFB088"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" fill="url(#bg1)"/>
+  <!-- Апельсин -->
+  <circle cx="100" cy="105" r="48" fill="#FF8C42"/>
+  <circle cx="100" cy="105" r="42" fill="#FFA557"/>
+  <ellipse cx="85" cy="88" rx="12" ry="7" fill="white" fill-opacity="0.4"/>
+  <!-- Листик -->
+  <ellipse cx="100" cy="52" rx="8" ry="14" fill="#4CAF50" transform="rotate(-15 100 52)"/>
+  <line x1="100" y1="57" x2="100" y2="68" stroke="#388E3C" stroke-width="2"/>
+</svg>

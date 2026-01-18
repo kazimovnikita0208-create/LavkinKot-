@@ -1,0 +1,31 @@
+<svg width="500" height="300" viewBox="0 0 500 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="promo1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2D3436"/>
+      <stop offset="100%" stop-color="#636E72"/>
+    </linearGradient>
+  </defs>
+  <rect width="500" height="300" fill="url(#promo1)"/>
+  <!-- Декоративные круги -->
+  <circle cx="420" cy="80" r="120" fill="white" fill-opacity="0.03"/>
+  <circle cx="80" cy="220" r="100" fill="white" fill-opacity="0.02"/>
+  <!-- Роллы -->
+  <g transform="translate(350, 150)">
+    <circle r="55" fill="#1A1A2E"/>
+    <circle r="46" fill="#FAFAFA"/>
+    <circle r="18" fill="#FF8A80"/>
+    <ellipse cx="-8" cy="-8" rx="6" ry="3" fill="white" fill-opacity="0.5"/>
+  </g>
+  <g transform="translate(420, 200)">
+    <circle r="35" fill="#1A1A2E"/>
+    <circle r="28" fill="#FAFAFA"/>
+    <circle r="12" fill="#FF8A80"/>
+  </g>
+  <!-- Палочки -->
+  <g transform="translate(120, 100) rotate(-20)">
+    <rect width="6" height="120" rx="3" fill="#8B5A2B"/>
+  </g>
+  <g transform="translate(140, 95) rotate(-15)">
+    <rect width="6" height="120" rx="3" fill="#A0522D"/>
+  </g>
+</svg>

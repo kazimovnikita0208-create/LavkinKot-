@@ -1,0 +1,42 @@
+<svg width="600" height="300" viewBox="0 0 600 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="shop3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2D3436"/>
+      <stop offset="100%" stop-color="#4A5568"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="300" fill="url(#shop3)"/>
+  <!-- Декор -->
+  <circle cx="520" cy="60" r="100" fill="white" fill-opacity="0.04"/>
+  <circle cx="80" cy="250" r="80" fill="white" fill-opacity="0.03"/>
+  <!-- Японская волна -->
+  <path d="M0 260 Q50 240 100 260 Q150 280 200 260 Q250 240 300 260 Q350 280 400 260 Q450 240 500 260 Q550 280 600 260 L600 300 L0 300 Z" fill="white" fill-opacity="0.03"/>
+  <!-- Тарелка -->
+  <ellipse cx="300" cy="180" rx="150" ry="40" fill="#1A1A2E"/>
+  <ellipse cx="300" cy="175" rx="135" ry="32" fill="#2D3436"/>
+  <!-- Роллы на тарелке -->
+  <g transform="translate(220, 150)">
+    <circle r="40" fill="#1A1A2E"/>
+    <circle r="33" fill="#FAFAFA"/>
+    <circle r="14" fill="#FF8A80"/>
+    <ellipse cx="-5" cy="-5" rx="4" ry="2.5" fill="white" fill-opacity="0.5"/>
+  </g>
+  <g transform="translate(320, 145)">
+    <circle r="45" fill="#1A1A2E"/>
+    <circle r="37" fill="#FAFAFA"/>
+    <circle r="16" fill="#FF8A80"/>
+    <ellipse cx="-6" cy="-6" rx="5" ry="3" fill="white" fill-opacity="0.5"/>
+  </g>
+  <g transform="translate(410, 155)">
+    <circle r="35" fill="#1A1A2E"/>
+    <circle r="28" fill="#FAFAFA"/>
+    <circle r="12" fill="#FF8A80"/>
+  </g>
+  <!-- Палочки -->
+  <g transform="translate(480, 60) rotate(30)">
+    <rect width="6" height="100" rx="3" fill="#5D4037"/>
+  </g>
+  <g transform="translate(500, 55) rotate(35)">
+    <rect width="6" height="100" rx="3" fill="#6D4C41"/>
+  </g>
+</svg>

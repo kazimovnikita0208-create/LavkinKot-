@@ -1,0 +1,52 @@
+<svg width="500" height="300" viewBox="0 0 500 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="promo-bake" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F4A261"/>
+      <stop offset="100%" stop-color="#E07B39"/>
+    </linearGradient>
+  </defs>
+  <rect width="500" height="300" fill="url(#promo-bake)"/>
+  <!-- Декор -->
+  <circle cx="450" cy="60" r="100" fill="white" fill-opacity="0.08"/>
+  <circle cx="50" cy="250" r="80" fill="white" fill-opacity="0.05"/>
+  
+  <!-- Буханка хлеба -->
+  <g transform="translate(320, 150)">
+    <ellipse rx="65" ry="42" fill="#C49A6C"/>
+    <ellipse rx="58" ry="36" fill="#D4A574"/>
+    <ellipse rx="50" ry="30" fill="#E8C899"/>
+    <path d="M-35 -12 Q0 -25 35 -12" stroke="#C49A6C" stroke-width="3" fill="none"/>
+    <ellipse cx="-18" cy="-15" rx="12" ry="7" fill="white" fill-opacity="0.25"/>
+  </g>
+  
+  <!-- Багет -->
+  <g transform="translate(140, 160) rotate(-20)">
+    <rect x="-10" y="-55" width="20" height="110" rx="10" fill="#D4A574"/>
+    <rect x="-7" y="-52" width="14" height="104" rx="7" fill="#E8C899"/>
+    <line x1="-4" y1="-35" x2="4" y2="-35" stroke="#C49A6C" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-4" y1="-15" x2="4" y2="-15" stroke="#C49A6C" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-4" y1="5" x2="4" y2="5" stroke="#C49A6C" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-4" y1="25" x2="4" y2="25" stroke="#C49A6C" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Булочки -->
+  <g transform="translate(420, 200)">
+    <circle r="30" fill="#D4A574"/>
+    <circle r="24" fill="#E8C899"/>
+    <ellipse cx="-7" cy="-8" rx="7" ry="4" fill="white" fill-opacity="0.3"/>
+  </g>
+  <g transform="translate(220, 220)">
+    <circle r="25" fill="#D4A574"/>
+    <circle r="20" fill="#E8C899"/>
+    <ellipse cx="-5" cy="-6" rx="5" ry="3" fill="white" fill-opacity="0.3"/>
+  </g>
+  
+  <!-- Колоски пшеницы -->
+  <g opacity="0.5">
+    <path d="M60 120 Q70 80 65 40" stroke="#E8C899" stroke-width="2" fill="none"/>
+    <ellipse cx="58" cy="55" rx="5" ry="10" fill="#E8C899"/>
+    <ellipse cx="72" cy="60" rx="5" ry="10" fill="#E8C899"/>
+    <ellipse cx="55" cy="75" rx="4" ry="8" fill="#E8C899"/>
+    <ellipse cx="70" cy="80" rx="4" ry="8" fill="#E8C899"/>
+  </g>
+</svg>
