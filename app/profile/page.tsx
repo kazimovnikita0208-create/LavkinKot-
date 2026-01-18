@@ -772,6 +772,81 @@ export default function ProfilePage() {
           <ChevronRight style={{ width: 20, height: 20, color: '#94A3B8' }} strokeWidth={2} />
         </button>
 
+        {/* Юридические документы */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          padding: '16px 0',
+          borderTop: '1px solid rgba(244, 162, 97, 0.1)',
+        }}>
+          <button
+            onClick={() => router.push('/privacy')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '8px 0',
+              textAlign: 'center',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget.querySelector('span') as HTMLElement).style.color = '#F4A261';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget.querySelector('span') as HTMLElement).style.color = '#94A3B8';
+            }}
+          >
+            <span style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#94A3B8',
+              transition: 'color 0.2s ease',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+            }}>
+              Политика конфиденциальности
+            </span>
+          </button>
+
+          <button
+            onClick={() => router.push('/terms')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '8px 0',
+              textAlign: 'center',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget.querySelector('span') as HTMLElement).style.color = '#F4A261';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget.querySelector('span') as HTMLElement).style.color = '#94A3B8';
+            }}
+          >
+            <span style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#94A3B8',
+              transition: 'color 0.2s ease',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+            }}>
+              Пользовательское соглашение
+            </span>
+          </button>
+
+          <p style={{
+            fontSize: 11,
+            color: '#64748B',
+            textAlign: 'center',
+            marginTop: 8,
+            fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+          }}>
+            © 2026 ЛавкинКот. Все права защищены.
+          </p>
+        </div>
+
       </main>
     </div>
   );
