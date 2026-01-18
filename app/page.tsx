@@ -457,26 +457,15 @@ export default function HomePage() {
                   }}>
                     {shop.category}
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Star style={{ width: 16, height: 16, color: '#F4A261', fill: '#F4A261' }} />
-                      <span style={{ 
-                        fontSize: 13, 
-                        fontWeight: 600, 
-                        color: '#FFFFFF',
-                        letterSpacing: '0.01em',
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
-                      }}>{shop.rating}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#B8C5D0' }}>
-                      <Clock style={{ width: 16, height: 16 }} />
-                      <span style={{ 
-                        fontSize: 13,
-                        fontWeight: 500,
-                        letterSpacing: '0.01em',
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
-                      }}>{shop.time}</span>
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Star style={{ width: 16, height: 16, color: '#F4A261', fill: '#F4A261' }} />
+                    <span style={{ 
+                      fontSize: 13, 
+                      fontWeight: 600, 
+                      color: '#FFFFFF',
+                      letterSpacing: '0.01em',
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+                    }}>{shop.rating}</span>
                   </div>
                 </div>
               </div>

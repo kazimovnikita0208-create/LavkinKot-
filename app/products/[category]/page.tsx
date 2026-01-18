@@ -252,34 +252,16 @@ export default function ProductCategoryShopsPage() {
                     {shop.category}
                   </p>
 
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 16,
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Star style={{ width: 14, height: 14, color: '#F4A261', fill: '#F4A261' }} strokeWidth={2} />
-                      <span style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: '#F4A261',
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
-                      }}>
-                        {shop.rating}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Clock style={{ width: 14, height: 14, color: '#94A3B8' }} strokeWidth={2} />
-                      <span style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#B8C5D0',
-                        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
-                      }}>
-                        {shop.time}
-                      </span>
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Star style={{ width: 14, height: 14, color: '#F4A261', fill: '#F4A261' }} strokeWidth={2} />
+                    <span style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: '#F4A261',
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+                    }}>
+                      {shop.rating}
+                    </span>
                   </div>
                 </div>
               </div>
