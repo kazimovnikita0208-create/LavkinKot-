@@ -4,6 +4,30 @@
  * В браузере (dev-режим) все методы работают как no-op.
  */
 
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: {
+        initData: string;
+        expand: () => void;
+        close: () => void;
+        setHeaderColor: (color: string) => void;
+        setBackgroundColor: (color: string) => void;
+        BackButton?: {
+          show: () => void;
+          hide: () => void;
+          onClick: (fn: () => void) => void;
+          offClick: (fn: () => void) => void;
+        };
+        HapticFeedback?: {
+          impactOccurred: (style: string) => void;
+          notificationOccurred: (type: string) => void;
+        };
+      };
+    };
+  }
+}
+
 let _isTMA = false;
 
 /**
