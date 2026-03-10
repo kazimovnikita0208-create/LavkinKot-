@@ -520,10 +520,10 @@ export default function OrderPage({ params }: { params: Promise<{ id: string }> 
                 justifyContent: 'center',
                 overflow: 'hidden',
               }}>
-                {order.shop.logo_url ? (
+                {order.shop.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img 
-                    src={order.shop.logo_url} 
+                    src={order.shop.image_url} 
                     alt={order.shop.name}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
