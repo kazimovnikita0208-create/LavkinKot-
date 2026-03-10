@@ -1,0 +1,44 @@
+# ─── Environment ─────────────────────────────────────────────────────────────
+.env
+.env.*
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+backend/.env
+frontend/.env.local
+
+# ─── Node.js ─────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Next.js ─────────────────────────────────────────────────────────────────
+frontend/.next/
+frontend/out/
+frontend/.next/standalone
+frontend/.next/static
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+backend/logs/
+
+# ─── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE ────────────────────────────────────────────────────────────────────────
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ─── Docker ──────────────────────────────────────────────────────────────────────
+# (docker-compose.override.yml может содержать локальные настройки)
+docker/docker-compose.override.yml

@@ -1,0 +1,5 @@
+{
+  "min_order_amount": 3,
+  "delivery_fee": 1,
+  "free_delivery_from": 1
+}
