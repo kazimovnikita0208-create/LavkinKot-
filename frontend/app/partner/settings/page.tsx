@@ -388,7 +388,7 @@ export default function PartnerSettingsPage() {
               </label>
               <select
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value as 'bakery' | 'store' | 'fruit' | 'restaurant' })}
                 disabled={!isEditing}
                 style={{
                   width: '100%',
