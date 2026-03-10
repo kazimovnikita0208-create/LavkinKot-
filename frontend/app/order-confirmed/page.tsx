@@ -33,7 +33,7 @@ function OrderConfirmedContent() {
     if (confirmationType === 'order' && orderId) {
       const fetchOrder = async () => {
         try {
-          const response = await ordersApi.getById(orderId);
+          const response = await ordersApi.getOrderById(orderId);
           if (response.success && response.data) {
             setOrder(response.data);
           }
