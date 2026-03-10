@@ -1,0 +1,21 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E3F2FD"/>
+      <stop offset="100%" stop-color="#BBDEFB"/>
+    </linearGradient>
+  </defs>
+  <rect width="200" height="200" fill="url(#bg3)"/>
+  <!-- Снежинка минималистичная -->
+  <g stroke="#42A5F5" stroke-width="3" stroke-linecap="round">
+    <line x1="100" y1="60" x2="100" y2="140"/>
+    <line x1="65" y1="80" x2="135" y2="120"/>
+    <line x1="65" y1="120" x2="135" y2="80"/>
+    <!-- Маленькие лучи -->
+    <line x1="100" y1="60" x2="90" y2="70"/>
+    <line x1="100" y1="60" x2="110" y2="70"/>
+    <line x1="100" y1="140" x2="90" y2="130"/>
+    <line x1="100" y1="140" x2="110" y2="130"/>
+  </g>
+  <circle cx="100" cy="100" r="8" fill="#42A5F5"/>
+</svg>

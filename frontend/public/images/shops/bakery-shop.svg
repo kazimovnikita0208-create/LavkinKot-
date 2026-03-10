@@ -1,0 +1,63 @@
+<svg width="600" height="300" viewBox="0 0 600 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="shop-bake" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFECD2"/>
+      <stop offset="100%" stop-color="#FCB69F"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="300" fill="url(#shop-bake)"/>
+  <!-- Декор -->
+  <circle cx="520" cy="60" r="100" fill="white" fill-opacity="0.15"/>
+  <circle cx="80" cy="250" r="80" fill="white" fill-opacity="0.1"/>
+  
+  <!-- Большой хлеб (буханка) по центру -->
+  <g transform="translate(300, 160)">
+    <ellipse rx="70" ry="45" fill="#C49A6C"/>
+    <ellipse rx="62" ry="38" fill="#D4A574"/>
+    <ellipse rx="55" ry="32" fill="#E8C899"/>
+    <!-- Надрез сверху -->
+    <path d="M-40 -15 Q0 -30 40 -15" stroke="#C49A6C" stroke-width="3" fill="none"/>
+    <!-- Блик -->
+    <ellipse cx="-20" cy="-18" rx="15" ry="8" fill="white" fill-opacity="0.25"/>
+  </g>
+  
+  <!-- Багет слева -->
+  <g transform="translate(120, 170) rotate(-15)">
+    <rect x="-10" y="-50" width="20" height="100" rx="10" fill="#D4A574"/>
+    <rect x="-7" y="-47" width="14" height="94" rx="7" fill="#E8C899"/>
+    <line x1="-4" y1="-30" x2="4" y2="-30" stroke="#C49A6C" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-4" y1="-10" x2="4" y2="-10" stroke="#C49A6C" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-4" y1="10" x2="4" y2="10" stroke="#C49A6C" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-4" y1="30" x2="4" y2="30" stroke="#C49A6C" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Багет справа -->
+  <g transform="translate(480, 160) rotate(20)">
+    <rect x="-10" y="-45" width="20" height="90" rx="10" fill="#D4A574"/>
+    <rect x="-7" y="-42" width="14" height="84" rx="7" fill="#E8C899"/>
+    <line x1="-4" y1="-25" x2="4" y2="-25" stroke="#C49A6C" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-4" y1="-5" x2="4" y2="-5" stroke="#C49A6C" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-4" y1="15" x2="4" y2="15" stroke="#C49A6C" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Булочки внизу -->
+  <g transform="translate(200, 220)">
+    <circle r="28" fill="#D4A574"/>
+    <circle r="22" fill="#E8C899"/>
+    <ellipse cx="-6" cy="-8" rx="6" ry="4" fill="white" fill-opacity="0.3"/>
+  </g>
+  <g transform="translate(400, 230)">
+    <circle r="25" fill="#D4A574"/>
+    <circle r="20" fill="#E8C899"/>
+    <ellipse cx="-5" cy="-7" rx="5" ry="3" fill="white" fill-opacity="0.3"/>
+  </g>
+  
+  <!-- Колоски пшеницы декор -->
+  <g stroke="#C49A6C" stroke-width="2" fill="none" opacity="0.4">
+    <path d="M50 100 Q60 70 55 40"/>
+    <ellipse cx="48" cy="50" rx="6" ry="10" fill="#D4A574" stroke="none"/>
+    <ellipse cx="62" cy="55" rx="6" ry="10" fill="#D4A574" stroke="none"/>
+    <ellipse cx="45" cy="70" rx="5" ry="9" fill="#D4A574" stroke="none"/>
+    <ellipse cx="60" cy="75" rx="5" ry="9" fill="#D4A574" stroke="none"/>
+  </g>
+</svg>

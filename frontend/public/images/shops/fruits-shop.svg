@@ -1,0 +1,33 @@
+<svg width="600" height="300" viewBox="0 0 600 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="shop2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A8E6CF"/>
+      <stop offset="100%" stop-color="#88D8B0"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="300" fill="url(#shop2)"/>
+  <!-- Декор -->
+  <circle cx="530" cy="50" r="90" fill="white" fill-opacity="0.15"/>
+  <circle cx="70" cy="260" r="70" fill="white" fill-opacity="0.1"/>
+  <!-- Апельсин центр -->
+  <g transform="translate(300, 140)">
+    <circle r="65" fill="#FF8C42"/>
+    <circle r="56" fill="#FFA557"/>
+    <ellipse cx="-18" cy="-20" rx="16" ry="9" fill="white" fill-opacity="0.4"/>
+    <ellipse cx="0" cy="-68" rx="12" ry="18" fill="#4CAF50" transform="rotate(-10)"/>
+  </g>
+  <!-- Яблоко слева -->
+  <g transform="translate(140, 190)">
+    <circle r="45" fill="#E53935"/>
+    <circle r="38" fill="#EF5350"/>
+    <ellipse cx="-10" cy="-12" rx="10" ry="6" fill="white" fill-opacity="0.35"/>
+    <ellipse cx="0" cy="-48" rx="6" ry="10" fill="#4CAF50"/>
+  </g>
+  <!-- Груша справа -->
+  <g transform="translate(460, 180)">
+    <ellipse cx="0" cy="15" rx="35" ry="40" fill="#C5E1A5"/>
+    <ellipse cx="0" cy="-20" rx="25" ry="28" fill="#AED581"/>
+    <ellipse cx="-8" cy="-28" rx="8" ry="5" fill="white" fill-opacity="0.3"/>
+    <ellipse cx="0" cy="-50" rx="5" ry="10" fill="#795548"/>
+  </g>
+</svg>
