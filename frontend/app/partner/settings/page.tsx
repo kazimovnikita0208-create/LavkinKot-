@@ -29,7 +29,17 @@ export default function PartnerSettingsPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string;
+    description: string;
+    address: string;
+    category: 'bakery' | 'store' | 'fruit' | 'restaurant';
+    min_order_amount: number;
+    delivery_time: string;
+    is_active: boolean;
+    image_url: string;
+    cover_url: string;
+  }>({
     name: '',
     description: '',
     address: '',
