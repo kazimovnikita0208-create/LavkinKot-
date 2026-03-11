@@ -32,9 +32,10 @@ bot.command('start', async (ctx) => {
     { parse_mode: 'Markdown' }
   );
 
-  // Отправляем документы
-  const privacyPath = path.join(__dirname, 'docs', 'privacy_policy.txt');
-  const termsPath = path.join(__dirname, 'docs', 'terms_of_service.txt');
+  // После компиляции __dirname = dist/, поэтому поднимаемся на уровень выше к docs/
+  const docsDir = path.join(__dirname, '..', 'docs');
+  const privacyPath = path.join(docsDir, 'privacy_policy.txt');
+  const termsPath = path.join(docsDir, 'terms_of_service.txt');
 
   await ctx.replyWithDocument(
     new InputFile(fs.createReadStream(privacyPath), 'Политика_конфиденциальности.txt'),
