@@ -1,62 +1,78 @@
-import { Bot, InlineKeyboard, webhookCallback } from 'grammy';
+import { Bot, InlineKeyboard, InputFile, webhookCallback } from 'grammy';
 import dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 dotenv.config();
 
-// Получаем токен бота из переменных окружения
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const WEB_APP_URL = process.env.WEB_APP_URL || 'https://lavkin-kot.ru';
+const WEB_APP_URL = process.env.WEB_APP_URL || 'https://lavkinkot.ru';
 
 if (!BOT_TOKEN) {
   throw new Error('BOT_TOKEN не указан в переменных окружения!');
 }
 
-// Создаём экземпляр бота
 const bot = new Bot(BOT_TOKEN);
 
-// Команда /start
+// ─── /start ──────────────────────────────────────────────────────────────────
 bot.command('start', async (ctx) => {
   const userName = ctx.from?.first_name || 'друг';
-  
-  // Создаём inline-клавиатуру с кнопкой WebApp
-  const keyboard = new InlineKeyboard()
-    .webApp('🛒 Открыть ЛавкинКот', WEB_APP_URL);
 
+  const acceptKeyboard = new InlineKeyboard()
+    .text('✅ Ознакомился(ась) с политиками', 'accept_policies');
+
+  // Приветственное сообщение
   await ctx.reply(
     `Привет, ${userName}! 👋\n\n` +
     `Добро пожаловать в *ЛавкинКот* — сервис доставки продуктов и еды в Самаре! 🐱\n\n` +
-    `🏪 Магазины\n` +
-    `🍎 Фруктовые лавки\n` +
-    `🥐 Пекарни\n` +
-    `🍕 Рестораны\n\n` +
-    `Нажми кнопку ниже, чтобы начать покупки:`,
+    `Перед началом работы просим вас ознакомиться с нашими документами:\n\n` +
+    `📄 *Политика конфиденциальности* — как мы обрабатываем ваши данные\n` +
+    `📋 *Пользовательское соглашение* — условия использования сервиса\n\n` +
+    `Документы прикреплены ниже. После ознакомления нажмите кнопку:`,
+    { parse_mode: 'Markdown' }
+  );
+
+  // Отправляем документы
+  const privacyPath = path.join(__dirname, 'docs', 'privacy_policy.txt');
+  const termsPath = path.join(__dirname, 'docs', 'terms_of_service.txt');
+
+  await ctx.replyWithDocument(
+    new InputFile(fs.createReadStream(privacyPath), 'Политика_конфиденциальности.txt'),
+    { caption: '📄 Политика конфиденциальности' }
+  );
+
+  await ctx.replyWithDocument(
+    new InputFile(fs.createReadStream(termsPath), 'Пользовательское_соглашение.txt'),
     {
-      parse_mode: 'Markdown',
-      reply_markup: keyboard,
+      caption: '📋 Пользовательское соглашение',
+      reply_markup: acceptKeyboard,
     }
   );
 });
 
-// Команда /help
-bot.command('help', async (ctx) => {
+// ─── Callback: пользователь ознакомился с политиками ─────────────────────────
+bot.callbackQuery('accept_policies', async (ctx) => {
+  await ctx.answerCallbackQuery();
+
+  // Убираем кнопку из предыдущего сообщения
+  await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() });
+
+  const openAppKeyboard = new InlineKeyboard()
+    .webApp('🛒 Открыть приложение', WEB_APP_URL);
+
   await ctx.reply(
-    `*ЛавкинКот — Помощь* 🐱\n\n` +
-    `📱 *Как пользоваться:*\n` +
-    `1. Нажмите кнопку "Открыть ЛавкинКот"\n` +
-    `2. Выберите магазин или категорию\n` +
-    `3. Добавьте товары в корзину\n` +
-    `4. Оформите заказ\n\n` +
-    `💳 *Подписка:*\n` +
-    `Купите подписку и получите лимит доставок на месяц!\n\n` +
-    `📞 *Поддержка:*\n` +
-    `Напишите нам: @lavkinkot_support`,
+    `✅ *Спасибо за подтверждение!*\n\n` +
+    `Вы приняли условия использования сервиса «ЛавкинКот».\n\n` +
+    `Теперь вы можете делать заказы из магазинов, пекарен, ресторанов и фруктовых лавок Самары 🐱\n\n` +
+    `Нажмите кнопку ниже, чтобы открыть приложение:`,
     {
       parse_mode: 'Markdown',
+      reply_markup: openAppKeyboard,
     }
   );
 });
 
-// Команда /menu - показать меню с WebApp
+// ─── /menu ───────────────────────────────────────────────────────────────────
 bot.command('menu', async (ctx) => {
   const keyboard = new InlineKeyboard()
     .webApp('🛒 Открыть магазин', WEB_APP_URL);
@@ -66,17 +82,29 @@ bot.command('menu', async (ctx) => {
   });
 });
 
-// Обработка данных из WebApp
+// ─── /help ───────────────────────────────────────────────────────────────────
+bot.command('help', async (ctx) => {
+  await ctx.reply(
+    `*ЛавкинКот — Помощь* 🐱\n\n` +
+    `📱 *Как пользоваться:*\n` +
+    `1. Нажмите кнопку "Открыть ЛавкинКот"\n` +
+    `2. Выберите магазин или категорию\n` +
+    `3. Добавьте товары в корзину\n` +
+    `4. Оформите заказ\n\n` +
+    `📞 *Поддержка:*\n` +
+    `Напишите нам: @lavkinkot_support`,
+    { parse_mode: 'Markdown' }
+  );
+});
+
+// ─── Данные из WebApp ─────────────────────────────────────────────────────────
 bot.on('message:web_app_data', async (ctx) => {
   const data = ctx.message.web_app_data?.data;
-  
+
   if (data) {
     try {
       const parsedData = JSON.parse(data);
-      console.log('Получены данные из WebApp:', parsedData);
-      
-      // Здесь можно обрабатывать данные от WebApp
-      // Например, подтверждение заказа
+
       if (parsedData.type === 'order_created') {
         await ctx.reply(
           `✅ *Заказ #${parsedData.orderNumber} создан!*\n\n` +
@@ -92,7 +120,7 @@ bot.on('message:web_app_data', async (ctx) => {
   }
 });
 
-// Обработка текстовых сообщений
+// ─── Прочие текстовые сообщения ───────────────────────────────────────────────
 bot.on('message:text', async (ctx) => {
   const keyboard = new InlineKeyboard()
     .webApp('🛒 Открыть ЛавкинКот', WEB_APP_URL);
@@ -103,23 +131,21 @@ bot.on('message:text', async (ctx) => {
   );
 });
 
-// Обработка ошибок
+// ─── Обработка ошибок ─────────────────────────────────────────────────────────
 bot.catch((err) => {
   console.error('Ошибка бота:', err);
 });
 
-// Запуск бота
+// ─── Запуск ───────────────────────────────────────────────────────────────────
 async function start() {
   console.log('🐱 ЛавкинКот бот запускается...');
-  
-  // Устанавливаем команды бота
+
   await bot.api.setMyCommands([
     { command: 'start', description: '🚀 Начать' },
     { command: 'menu', description: '🛒 Открыть магазин' },
     { command: 'help', description: '❓ Помощь' },
   ]);
 
-  // Устанавливаем кнопку Menu с WebApp
   await bot.api.setChatMenuButton({
     menu_button: {
       type: 'web_app',
@@ -129,8 +155,7 @@ async function start() {
   });
 
   console.log('✅ Команды и меню настроены');
-  
-  // Запускаем polling
+
   await bot.start({
     onStart: (botInfo) => {
       console.log(`✅ Бот @${botInfo.username} запущен!`);
@@ -141,7 +166,4 @@ async function start() {
 
 start();
 
-// Экспорт для webhook (если нужно)
 export { bot, webhookCallback };
-
-

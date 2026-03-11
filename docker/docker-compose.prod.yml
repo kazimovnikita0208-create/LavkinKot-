@@ -48,6 +48,18 @@ services:
       - backend
       - frontend
 
+  bot:
+    build:
+      context: ../bot
+      dockerfile: ../docker/Dockerfile.bot
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    networks:
+      - lavkinkot
+    depends_on:
+      - backend
+
 networks:
   lavkinkot:
     driver: bridge
