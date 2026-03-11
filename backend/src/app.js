@@ -9,6 +9,9 @@ const { requestLogger } = require('./utils/logger');
 
 const app = express();
 
+// Trust nginx proxy (needed for X-Forwarded-For and rate limiting to work correctly)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
