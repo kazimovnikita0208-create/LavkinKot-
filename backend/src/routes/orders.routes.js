@@ -2,12 +2,22 @@ const { Router } = require('express');
 const ordersController = require('../controllers/orders.controller');
 const { authMiddleware } = require('../middlewares/auth.middleware');
 const { validateBody, validateQuery } = require('../middlewares/validator.middleware');
-const { createOrderSchema, ordersQuerySchema } = require('../utils/validators');
+const { createOrderSchema, createBatchOrderSchema, ordersQuerySchema } = require('../utils/validators');
 
 const router = Router();
 
 // Все маршруты требуют авторизации
 router.use(authMiddleware);
+
+/**
+ * POST /api/orders/batch
+ * Создание заказов из нескольких магазинов (один чекаут)
+ * ВАЖНО: должен быть ДО /:id чтобы 'batch' не интерпретировался как id
+ */
+router.post('/batch',
+  validateBody(createBatchOrderSchema),
+  ordersController.createBatchOrder
+);
 
 /**
  * POST /api/orders

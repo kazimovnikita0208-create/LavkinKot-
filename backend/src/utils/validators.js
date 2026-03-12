@@ -26,26 +26,45 @@ const updateAddressSchema = Joi.object({
   apartment: Joi.string().max(50).required()
 });
 
-// Order schemas
-const createOrderSchema = Joi.object({
-  shop_id: Joi.string().uuid().required(),
-  items: Joi.array().items(
-    Joi.object({
-      product_id: Joi.string().uuid().required(),
-      quantity: Joi.number().integer().min(1).max(99).required(),
-      price: Joi.number().positive().precision(2).optional()
-    })
-  ).min(1).required(),
+// Общие поля адреса и доставки (переиспользуем в batch)
+const deliveryFields = {
   delivery_street: Joi.string().max(255).required(),
   delivery_house: Joi.string().max(50).required(),
   delivery_entrance: Joi.string().max(20).allow(null, ''),
   delivery_floor: Joi.string().max(20).allow(null, ''),
   delivery_apartment: Joi.string().max(50).required(),
   delivery_date: Joi.date().iso().required(),
+  delivery_time_slot: Joi.string().max(20).allow(null, ''),
   contact_phone: Joi.string().required(),
   use_subscription: Joi.boolean().default(false),
   leave_at_door: Joi.boolean().default(false),
-  comment: Joi.string().max(500).allow(null, '')
+  comment: Joi.string().max(500).allow(null, ''),
+};
+
+const orderItemsSchema = Joi.array().items(
+  Joi.object({
+    product_id: Joi.string().uuid().required(),
+    quantity: Joi.number().integer().min(1).max(99).required(),
+    price: Joi.number().positive().precision(2).optional()
+  })
+).min(1).required();
+
+// Order schemas
+const createOrderSchema = Joi.object({
+  shop_id: Joi.string().uuid().required(),
+  items: orderItemsSchema,
+  ...deliveryFields,
+});
+
+// Batch order schema (несколько магазинов, одна доставка)
+const createBatchOrderSchema = Joi.object({
+  orders: Joi.array().items(
+    Joi.object({
+      shop_id: Joi.string().uuid().required(),
+      items: orderItemsSchema,
+    })
+  ).min(1).required(),
+  ...deliveryFields,
 });
 
 // Subscription schemas
@@ -136,6 +155,7 @@ module.exports = {
   updateProfileSchema,
   updateAddressSchema,
   createOrderSchema,
+  createBatchOrderSchema,
   activateSubscriptionSchema,
   createProductSchema,
   updateProductSchema,

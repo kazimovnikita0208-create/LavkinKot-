@@ -235,8 +235,11 @@ export const subscriptionsApi = {
 
 // Orders
 export const ordersApi = {
-  createOrder: (orderData: CreateOrderData) => 
+  createOrder: (orderData: CreateOrderData) =>
     api.post<Order>('/orders', orderData),
+
+  createBatchOrder: (batchData: CreateBatchOrderData) =>
+    api.post<BatchOrderResponse>('/orders/batch', batchData),
   
   getOrders: (params?: { status?: string; page?: number; limit?: number }) => {
     const query = new URLSearchParams();
@@ -664,6 +667,26 @@ export interface CreateOrderData {
   use_subscription?: boolean;
   leave_at_door?: boolean;
   comment?: string;
+}
+
+export interface CreateBatchOrderData {
+  orders: { shop_id: string; items: { product_id: string; quantity: number; price: number }[] }[];
+  delivery_street: string;
+  delivery_house: string;
+  delivery_entrance?: string;
+  delivery_floor?: string;
+  delivery_apartment: string;
+  delivery_date: string;
+  delivery_time_slot?: string;
+  contact_phone: string;
+  use_subscription?: boolean;
+  leave_at_door?: boolean;
+  comment?: string;
+}
+
+export interface BatchOrderResponse {
+  orders: Order[];
+  batch_id: string;
 }
 
 export interface UploadResponse {

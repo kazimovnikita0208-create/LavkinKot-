@@ -11,7 +11,9 @@ class OrdersService {
    * @param {string} userId - ID пользователя
    * @returns {Object} - Созданный заказ
    */
-  async createOrder(orderData, userId) {
+  async createOrder(orderData, userId, options = {}) {
+    const { skipDeliveryFee = false, batchId = null } = options;
+
     const {
       shop_id,
       items,
@@ -76,8 +78,12 @@ class OrdersService {
     let paymentMethod = 'one_time';
     let useFreeDelivery = false;
     let useSubscriptionDelivery = false;
-    
-    if (use_subscription) {
+
+    // Для дополнительных заказов в batch — доставка уже оплачена первым заказом
+    if (skipDeliveryFee) {
+      deliveryFee = 0;
+      paymentMethod = 'batch_included';
+    } else if (use_subscription) {
       // Сначала проверяем бесплатные доставки
       const { data: profile } = await supabase
         .from('profiles')
@@ -108,7 +114,7 @@ class OrdersService {
           throw new AppError('No free deliveries or active subscription available', 400);
         }
       }
-    } else {
+    } else if (!skipDeliveryFee) {
       deliveryFee = ONE_TIME_DELIVERY_FEE;
       paymentMethod = 'one_time';
     }
@@ -137,7 +143,8 @@ class OrdersService {
         leave_at_door: leave_at_door || false,
         customer_phone: contact_phone,
         payment_method: paymentMethod,
-        payment_status: paymentMethod === 'subscription' ? 'paid' : 'pending'
+        payment_status: (paymentMethod === 'subscription' || paymentMethod === 'batch_included') ? 'paid' : 'pending',
+        batch_id: batchId || null
       })
       .select()
       .single();
@@ -372,6 +379,66 @@ class OrdersService {
     return { success: true };
   }
   
+  /**
+   * Создание batch-заказа (товары из нескольких магазинов, одна доставка)
+   * @param {Object} batchData - Данные: orders[], delivery info, use_subscription
+   * @param {string} userId - ID пользователя
+   */
+  async createBatchOrders(batchData, userId) {
+    const { crypto } = require('crypto');
+    const batchId = require('crypto').randomUUID();
+
+    const {
+      orders: shopOrders,
+      delivery_street,
+      delivery_house,
+      delivery_entrance,
+      delivery_floor,
+      delivery_apartment,
+      delivery_date,
+      delivery_time_slot,
+      contact_phone,
+      leave_at_door,
+      use_subscription,
+      comment,
+    } = batchData;
+
+    if (!shopOrders || shopOrders.length === 0) {
+      throw new AppError('No orders provided', 400);
+    }
+
+    const createdOrders = [];
+
+    for (let i = 0; i < shopOrders.length; i++) {
+      const { shop_id, items } = shopOrders[i];
+      const isFirst = i === 0;
+
+      const order = await this.createOrder(
+        {
+          shop_id,
+          items,
+          delivery_street,
+          delivery_house,
+          delivery_entrance,
+          delivery_floor,
+          delivery_apartment,
+          delivery_date,
+          delivery_time_slot,
+          contact_phone,
+          leave_at_door,
+          comment,
+          use_subscription: isFirst ? use_subscription : false,
+        },
+        userId,
+        { skipDeliveryFee: !isFirst, batchId }
+      );
+
+      createdOrders.push(order);
+    }
+
+    return { orders: createdOrders, batch_id: batchId };
+  }
+
   /**
    * Возврат доставки в подписку
    */

@@ -12,40 +12,44 @@ function OrderConfirmedContent() {
   const searchParams = useSearchParams();
   const { subscription, refetch: refetchSubscription } = useMySubscription();
   
-  // Определяем тип подтверждения: 'subscription' или 'order'
   const confirmationType = searchParams.get('type') || 'order';
   const orderId = searchParams.get('orderId') || '';
   const returnUrl = searchParams.get('returnUrl') || '';
-  
-  // Загружаем данные заказа если это заказ
+  const isBatch = searchParams.get('batch') === 'true';
+  const orderIds = searchParams.get('orderIds') || '';
+
   const [order, setOrder] = useState<Order | null>(null);
-  const [isLoading, setIsLoading] = useState(confirmationType === 'order' && !!orderId);
+  const [batchOrders, setBatchOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(confirmationType === 'order');
   
-  // Обновляем данные подписки при загрузке страницы
   useEffect(() => {
     if (confirmationType === 'subscription') {
       refetchSubscription();
+      setIsLoading(false);
     }
   }, [confirmationType, refetchSubscription]);
 
-  // Загружаем данные заказа
   useEffect(() => {
-    if (confirmationType === 'order' && orderId) {
-      const fetchOrder = async () => {
-        try {
+    if (confirmationType !== 'order') return;
+
+    const fetchOrders = async () => {
+      try {
+        if (isBatch && orderIds) {
+          const ids = orderIds.split(',').filter(Boolean);
+          const results = await Promise.all(ids.map(id => ordersApi.getOrderById(id)));
+          setBatchOrders(results.filter(r => r.success && r.data).map(r => r.data as Order));
+        } else if (orderId) {
           const response = await ordersApi.getOrderById(orderId);
-          if (response.success && response.data) {
-            setOrder(response.data);
-          }
-        } catch (error) {
-          console.error('Failed to fetch order:', error);
-        } finally {
-          setIsLoading(false);
+          if (response.success && response.data) setOrder(response.data);
         }
-      };
-      fetchOrder();
-    }
-  }, [confirmationType, orderId]);
+      } catch (error) {
+        console.error('Failed to fetch order:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchOrders();
+  }, [confirmationType, orderId, isBatch, orderIds]);
 
   // Если пришли с checkout и купили подписку - показываем кнопку возврата
   const showReturnToCheckout = returnUrl === '/checkout';
@@ -309,8 +313,63 @@ function OrderConfirmedContent() {
           </>
         )}
 
+        {/* Batch-заказ: несколько магазинов */}
+        {confirmationType === 'order' && isBatch && batchOrders.length > 0 && (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+              {batchOrders.map((bOrder, idx) => (
+                <div key={bOrder.id} style={{
+                  background: 'linear-gradient(135deg, rgba(45, 79, 94, 0.5) 0%, rgba(38, 73, 92, 0.4) 100%)',
+                  borderRadius: 16,
+                  padding: 16,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.25), 0 0 0 1px rgba(244, 162, 97, 0.1)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 600 }}>
+                      Магазин {idx + 1}{idx === 0 ? ' · включает доставку' : ' · доставка включена'}
+                    </span>
+                    <span style={{ fontSize: 16, fontWeight: 900, color: '#F4A261' }}>
+                      #{bOrder.order_number || bOrder.id.slice(0, 8)}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 13, color: '#B8C5D0', fontWeight: 500 }}>Сумма</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: '#FFFFFF' }}>{bOrder.total.toFixed(2)} ₽</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                    <span style={{ fontSize: 13, color: '#B8C5D0', fontWeight: 500 }}>Время</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF' }}>
+                      {bOrder.delivery_date ? formatDeliveryDate(bOrder.delivery_date) : ''}, {bOrder.delivery_time_slot || ''}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => router.push(`/order/${bOrder.id}`)}
+                    style={{
+                      marginTop: 10, width: '100%', padding: '8px',
+                      borderRadius: 10, border: '1px solid rgba(244, 162, 97, 0.3)',
+                      background: 'transparent', color: '#F4A261',
+                      fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                    }}
+                  >
+                    Отследить →
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div style={{
+              padding: '10px 12px', borderRadius: 12,
+              background: 'rgba(244, 162, 97, 0.1)', border: '1px solid rgba(244, 162, 97, 0.2)',
+              marginBottom: 16,
+            }}>
+              <p style={{ fontSize: 11, color: '#F4A261', textAlign: 'center', fontWeight: 600, lineHeight: 1.4 }}>
+                💬 Каждый магазин получил свой заказ. Курьер соберёт всё за одну поездку.
+              </p>
+            </div>
+          </>
+        )}
+
         {/* Информация о заказе */}
-        {confirmationType === 'order' && order && (
+        {confirmationType === 'order' && !isBatch && order && (
           <>
             <div style={{
               background: 'linear-gradient(135deg, rgba(45, 79, 94, 0.5) 0%, rgba(38, 73, 92, 0.4) 100%)',
@@ -461,8 +520,8 @@ function OrderConfirmedContent() {
             {showReturnToCheckout ? 'Продолжить оформление заказа' : 'На главный экран'}
           </button>
 
-          {/* Кнопка отследить заказ (только для заказов) */}
-          {confirmationType === 'order' && order && (
+          {/* Кнопка отследить заказ (только для одиночного заказа) */}
+          {confirmationType === 'order' && !isBatch && order && (
             <button
               onClick={() => router.push(`/order/${order.id}`)}
               style={{

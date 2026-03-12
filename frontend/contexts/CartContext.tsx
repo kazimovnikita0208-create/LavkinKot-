@@ -58,20 +58,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
       }
 
-      // Если в корзине уже есть товары из другого магазина — очищаем и начинаем заново
-      const hasDifferentShop = prevItems.length > 0 && prevItems[0].shopId !== newItem.shopId;
-      if (hasDifferentShop) {
-        if (typeof window !== 'undefined') {
-          const confirmed = window.confirm(
-            `В корзине уже есть товары из «${prevItems[0].shopName}».\n` +
-            `Добавить товар из «${newItem.shopName}»?\n\n` +
-            `Текущая корзина будет очищена.`
-          );
-          if (!confirmed) return prevItems;
-        }
-        return [{ ...newItem, quantity: 1 }];
-      }
-
+      // Товары из разных магазинов поддерживаются — создаётся batch-заказ
       return [...prevItems, { ...newItem, quantity: 1 }];
     });
   };

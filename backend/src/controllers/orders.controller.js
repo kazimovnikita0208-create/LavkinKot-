@@ -66,8 +66,22 @@ const cancelOrder = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * POST /api/orders/batch
+ * Создание заказов из нескольких магазинов за один чекаут
+ */
+const createBatchOrder = asyncHandler(async (req, res) => {
+  const result = await ordersService.createBatchOrders(req.body, req.user.id);
+
+  res.status(201).json({
+    success: true,
+    data: result
+  });
+});
+
 module.exports = {
   createOrder,
+  createBatchOrder,
   getOrders,
   getOrderById,
   getOrderStatus,

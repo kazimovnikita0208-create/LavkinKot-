@@ -7,6 +7,7 @@ import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMySubscription, useCreateOrder } from '@/hooks';
+import { ordersApi } from '@/lib/api';
 import { useTelegramBackButton } from '@/hooks/useTelegram';
 
 const districts = ['Октябрьский'];
@@ -205,27 +206,12 @@ export default function CheckoutPage() {
     });
 
     const shopIds = Object.keys(itemsByShop);
-
-    // Если товары из нескольких магазинов — берём только первый и предупреждаем
-    if (shopIds.length > 1) {
-      const firstShopName = itemsByShop[shopIds[0]][0]?.shopName || 'первого магазина';
-      const otherCount = cartItems.length - itemsByShop[shopIds[0]].length;
-      alert(
-        `В корзине товары из разных магазинов.\n` +
-        `Будет оформлен заказ только из «${firstShopName}».\n` +
-        `${otherCount} товар(ов) из других магазинов не войдут в этот заказ.\n\n` +
-        `Рекомендуем очистить корзину и добавить товары из одного магазина.`
-      );
-    }
-
-    const shopId = shopIds[0];
-    const shopItems = itemsByShop[shopId];
+    const isMultiShop = shopIds.length > 1;
 
     const [timeStart] = selectedTime.split(' - ');
     const deliveryDateTime = new Date(`${selectedDate}T${timeStart}:00`);
 
-    const orderData: import('@/lib/api').CreateOrderData = {
-      shop_id: shopId,
+    const deliveryInfo = {
       delivery_street: street,
       delivery_house: house,
       delivery_entrance: entrance || undefined,
@@ -236,26 +222,71 @@ export default function CheckoutPage() {
       contact_phone: phone,
       leave_at_door: leaveAtDoor,
       use_subscription: deliveryPaymentType === 'subscription' || deliveryPaymentType === 'free',
-      items: shopItems.map(item => ({
-        product_id: item.id,
-        quantity: item.quantity,
-        price: item.price,
-      })),
     };
-    
-    const order = await createOrder(orderData);
-    
-    if (order) {
-      clearCart();
-      // Очищаем черновик адреса после успешного заказа
-      try { localStorage.removeItem(CHECKOUT_DRAFT_KEY); } catch {}
-      if (deliveryPaymentType === 'subscription' || deliveryPaymentType === 'free') {
-        router.push(`/order-confirmed?type=order&orderId=${order.id}`);
+
+    try {
+      if (isMultiShop) {
+        // Batch-заказ: несколько магазинов, одна доставка
+        const batchData: import('@/lib/api').CreateBatchOrderData = {
+          ...deliveryInfo,
+          orders: shopIds.map(shopId => ({
+            shop_id: shopId,
+            items: itemsByShop[shopId].map(item => ({
+              product_id: item.id,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          })),
+        };
+
+        const response = await ordersApi.createBatchOrder(batchData);
+        if (!response.success || !response.data) {
+          alert('Ошибка при создании заказа. Попробуйте ещё раз.');
+          return;
+        }
+
+        clearCart();
+        try { localStorage.removeItem(CHECKOUT_DRAFT_KEY); } catch {}
+
+        const { orders: batchOrders, batch_id } = response.data;
+        const orderIds = batchOrders.map(o => o.id).join(',');
+
+        if (deliveryPaymentType === 'subscription' || deliveryPaymentType === 'free') {
+          router.push(`/order-confirmed?type=order&batch=true&orderIds=${orderIds}`);
+        } else {
+          // Оплата за весь batch по сумме первого заказа (с доставкой)
+          const firstOrderId = batchOrders[0].id;
+          router.push(`/payment?type=order&orderId=${firstOrderId}&batchId=${batch_id}&amount=${finalTotal}`);
+        }
       } else {
-        router.push(`/payment?type=order&orderId=${order.id}&amount=${finalTotal}`);
+        // Обычный заказ из одного магазина
+        const orderData: import('@/lib/api').CreateOrderData = {
+          shop_id: shopIds[0],
+          ...deliveryInfo,
+          items: itemsByShop[shopIds[0]].map(item => ({
+            product_id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        };
+
+        const order = await createOrder(orderData);
+
+        if (order) {
+          clearCart();
+          try { localStorage.removeItem(CHECKOUT_DRAFT_KEY); } catch {}
+          if (deliveryPaymentType === 'subscription' || deliveryPaymentType === 'free') {
+            router.push(`/order-confirmed?type=order&orderId=${order.id}`);
+          } else {
+            router.push(`/payment?type=order&orderId=${order.id}&amount=${finalTotal}`);
+          }
+        } else {
+          alert('Ошибка при создании заказа. Попробуйте ещё раз.');
+        }
       }
-    } else {
-      alert('Ошибка при создании заказа. Попробуйте ещё раз.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Неизвестная ошибка';
+      alert(`Ошибка при создании заказа: ${msg}`);
     }
   };
   
