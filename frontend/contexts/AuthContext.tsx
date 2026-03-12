@@ -24,25 +24,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, []);
 
-  const checkAuth = async () => {
-    const token = api.getToken();
-    
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
+  // Попытка автологина через Telegram initData
+  const tryTelegramAutoLogin = async (): Promise<boolean> => {
+    if (typeof window === 'undefined') return false;
+    const initData = window.Telegram?.WebApp?.initData;
+    if (!initData) return false;
 
     try {
-      const response = await profileApi.getProfile();
+      const response = await authApi.loginWithTelegram(initData);
       if (response.success && response.data) {
-        setUser(response.data);
+        api.setToken(response.data.token);
+        const profileResponse = await profileApi.getProfile();
+        if (profileResponse.success && profileResponse.data) {
+          setUser(profileResponse.data);
+          return true;
+        }
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
-      api.setToken(null);
-    } finally {
-      setIsLoading(false);
+      console.error('[Auth] Telegram auto-login failed:', error);
     }
+    return false;
+  };
+
+  const checkAuth = async () => {
+    const token = api.getToken();
+
+    if (token) {
+      try {
+        const response = await profileApi.getProfile();
+        if (response.success && response.data) {
+          setUser(response.data);
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        // Токен невалиден — сбрасываем и пробуем через Telegram
+        api.setToken(null);
+      }
+    }
+
+    // Нет токена или токен протух — пробуем автологин через Telegram
+    await tryTelegramAutoLogin();
+    setIsLoading(false);
   };
 
   const login = async (initData: string) => {

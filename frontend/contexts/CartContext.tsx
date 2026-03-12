@@ -24,6 +24,7 @@ interface CartContextType {
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
+  currentShopId: string | null;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -50,15 +51,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = (newItem: Omit<CartItem, 'quantity'>) => {
     setItems(prevItems => {
       const existingItem = prevItems.find(item => item.id === newItem.id);
-      
+
       if (existingItem) {
         return prevItems.map(item =>
-          item.id === newItem.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+          item.id === newItem.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      
+
+      // Если в корзине уже есть товары из другого магазина — очищаем и начинаем заново
+      const hasDifferentShop = prevItems.length > 0 && prevItems[0].shopId !== newItem.shopId;
+      if (hasDifferentShop) {
+        if (typeof window !== 'undefined') {
+          const confirmed = window.confirm(
+            `В корзине уже есть товары из «${prevItems[0].shopName}».\n` +
+            `Добавить товар из «${newItem.shopName}»?\n\n` +
+            `Текущая корзина будет очищена.`
+          );
+          if (!confirmed) return prevItems;
+        }
+        return [{ ...newItem, quantity: 1 }];
+      }
+
       return [...prevItems, { ...newItem, quantity: 1 }];
     });
   };
@@ -97,6 +110,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return items.reduce((total, item) => total + item.quantity, 0);
   };
 
+  const currentShopId = items.length > 0 ? items[0].shopId : null;
+
   return (
     <CartContext.Provider
       value={{
@@ -107,6 +122,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         getTotalPrice,
         getTotalItems,
+        currentShopId,
       }}
     >
       {children}

@@ -659,6 +659,7 @@ export interface CreateOrderData {
   delivery_floor?: string;
   delivery_apartment: string;
   delivery_date: string;
+  delivery_time_slot?: string;
   contact_phone: string;
   use_subscription?: boolean;
   leave_at_door?: boolean;

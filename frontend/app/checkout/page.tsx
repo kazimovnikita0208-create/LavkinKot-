@@ -200,18 +200,30 @@ export default function CheckoutPage() {
     const itemsByShop: Record<string, typeof cartItems> = {};
     cartItems.forEach(item => {
       const shopId = item.shopId || 'unknown';
-      if (!itemsByShop[shopId]) {
-        itemsByShop[shopId] = [];
-      }
+      if (!itemsByShop[shopId]) itemsByShop[shopId] = [];
       itemsByShop[shopId].push(item);
     });
-    
-    // Для простоты берём первый магазин
-    const shopId = Object.keys(itemsByShop)[0];
-    
+
+    const shopIds = Object.keys(itemsByShop);
+
+    // Если товары из нескольких магазинов — берём только первый и предупреждаем
+    if (shopIds.length > 1) {
+      const firstShopName = itemsByShop[shopIds[0]][0]?.shopName || 'первого магазина';
+      const otherCount = cartItems.length - itemsByShop[shopIds[0]].length;
+      alert(
+        `В корзине товары из разных магазинов.\n` +
+        `Будет оформлен заказ только из «${firstShopName}».\n` +
+        `${otherCount} товар(ов) из других магазинов не войдут в этот заказ.\n\n` +
+        `Рекомендуем очистить корзину и добавить товары из одного магазина.`
+      );
+    }
+
+    const shopId = shopIds[0];
+    const shopItems = itemsByShop[shopId];
+
     const [timeStart] = selectedTime.split(' - ');
     const deliveryDateTime = new Date(`${selectedDate}T${timeStart}:00`);
-    
+
     const orderData: import('@/lib/api').CreateOrderData = {
       shop_id: shopId,
       delivery_street: street,
@@ -220,10 +232,11 @@ export default function CheckoutPage() {
       delivery_floor: floor || undefined,
       delivery_apartment: apartment,
       delivery_date: deliveryDateTime.toISOString(),
+      delivery_time_slot: selectedTime,
       contact_phone: phone,
       leave_at_door: leaveAtDoor,
       use_subscription: deliveryPaymentType === 'subscription' || deliveryPaymentType === 'free',
-      items: cartItems.map(item => ({
+      items: shopItems.map(item => ({
         product_id: item.id,
         quantity: item.quantity,
         price: item.price,
