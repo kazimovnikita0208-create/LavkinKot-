@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { 
   User, 
   ArrowLeft, 
@@ -23,8 +24,9 @@ import { Order } from '@/lib/api';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, isAuthenticated } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated, login } = useAuth();
   const { orders, isLoading: ordersLoading } = useOrders({ limit: 5 });
+  const [loginAttempting, setLoginAttempting] = useState(false);
   const { subscription, isLoading: subLoading } = useMySubscription();
 
   // Активные заказы (не доставлены и не отменены)
@@ -175,17 +177,63 @@ export default function ProfilePage() {
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+            {/* Кнопка принудительного входа через Telegram initData */}
             <button
-              onClick={() => router.push('/')}
+              onClick={async () => {
+                setLoginAttempting(true);
+                try {
+                  let initData = '';
+                  // Ждём до 2 секунд
+                  for (let i = 0; i < 8; i++) {
+                    initData = (typeof window !== 'undefined' && window.Telegram?.WebApp?.initData) || '';
+                    if (initData) break;
+                    await new Promise(r => setTimeout(r, 250));
+                  }
+                  if (initData) {
+                    await login(initData);
+                  } else {
+                    alert('Откройте приложение через бота в Telegram');
+                  }
+                } finally {
+                  setLoginAttempting(false);
+                }
+              }}
+              disabled={loginAttempting}
               style={{
-                background: 'linear-gradient(135deg, #F4A261 0%, #E89551 100%)',
+                background: loginAttempting
+                  ? 'rgba(244, 162, 97, 0.5)'
+                  : 'linear-gradient(135deg, #F4A261 0%, #E89551 100%)',
                 color: '#FFFFFF',
                 padding: '14px 32px',
                 borderRadius: 14,
                 border: 'none',
-                cursor: 'pointer',
+                cursor: loginAttempting ? 'default' : 'pointer',
                 fontWeight: 800,
                 fontSize: 15,
+                width: '100%',
+                maxWidth: 280,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              {loginAttempting
+                ? <><Loader2 style={{ width: 18, height: 18, animation: 'spin 1s linear infinite' }} /> Входим...</>
+                : 'Войти через Telegram'}
+            </button>
+
+            <button
+              onClick={() => router.push('/')}
+              style={{
+                background: 'transparent',
+                color: '#94A3B8',
+                padding: '12px 32px',
+                borderRadius: 14,
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: 14,
                 width: '100%',
                 maxWidth: 280,
               }}

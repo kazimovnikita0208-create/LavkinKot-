@@ -25,10 +25,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Попытка автологина через Telegram initData
+  // Ждём до 2 секунд чтобы Telegram успел установить initData в WebView
   const tryTelegramAutoLogin = async (): Promise<boolean> => {
     if (typeof window === 'undefined') return false;
-    const initData = window.Telegram?.WebApp?.initData;
-    if (!initData) return false;
+
+    let initData = '';
+    for (let i = 0; i < 8; i++) {
+      initData = window.Telegram?.WebApp?.initData || '';
+      if (initData) break;
+      await new Promise(r => setTimeout(r, 250));
+    }
+
+    if (!initData) {
+      console.log('[Auth] Telegram initData not available');
+      return false;
+    }
 
     try {
       const response = await authApi.loginWithTelegram(initData);
