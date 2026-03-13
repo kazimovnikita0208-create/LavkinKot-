@@ -369,13 +369,12 @@ function PaymentContent() {
           style={{
             position: 'fixed', inset: 0, zIndex: 100,
             display: 'flex', alignItems: 'flex-end',
-            background: 'rgba(0, 0, 0, 0.7)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
-            animation: 'fadeIn 0.2s ease',
+            background: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            animation: 'fadeIn 0.25s ease',
           }}
           onClick={(e) => {
-            // Закрыть по клику на backdrop только если не идёт оплата
             if (e.target === e.currentTarget && paymentStatus !== 'processing') {
               setShowModal(false);
               setPaymentStatus('idle');
@@ -386,66 +385,104 @@ function PaymentContent() {
             width: '100%',
             maxWidth: 375,
             margin: '0 auto',
-            background: '#FFFFFF',
-            borderRadius: '24px 24px 0 0',
-            overflow: 'hidden',
-            animation: 'slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            maxHeight: '90vh',
+            background: '#F8F9FA',
+            borderRadius: '20px 20px 0 0',
+            height: '88vh',
             display: 'flex',
             flexDirection: 'column',
+            animation: 'slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+            overflow: 'hidden',
           }}>
-            {/* Шапка модалки */}
+
+            {/* Drag handle */}
             <div style={{
-              padding: '14px 20px 10px',
+              display: 'flex',
+              justifyContent: 'center',
+              paddingTop: 10,
+              paddingBottom: 6,
               background: '#FFFFFF',
-              borderBottom: '1px solid #F0F0F0',
+              flexShrink: 0,
+            }}>
+              <div style={{
+                width: 36, height: 4,
+                borderRadius: 2,
+                background: '#D1D5DB',
+              }} />
+            </div>
+
+            {/* Шапка */}
+            <div style={{
+              padding: '10px 16px 12px',
+              background: '#FFFFFF',
+              borderBottom: '1px solid #EFEFEF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               flexShrink: 0,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <ShieldCheck style={{ width: 18, height: 18, color: '#4CAF50' }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#1A1A1A' }}>
-                  Безопасная оплата
-                </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{
+                  width: 30, height: 30, borderRadius: 8,
+                  background: 'rgba(76, 175, 80, 0.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <ShieldCheck style={{ width: 17, height: 17, color: '#4CAF50' }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#111', lineHeight: 1.2 }}>
+                    Безопасная оплата
+                  </p>
+                  <p style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 500 }}>
+                    Защищено Robokassa · SSL
+                  </p>
+                </div>
               </div>
-              {paymentStatus !== 'processing' && (
-                <button
-                  onClick={() => { setShowModal(false); setPaymentStatus('idle'); }}
-                  style={{
-                    background: '#F5F5F5', border: 'none',
-                    borderRadius: '50%', width: 30, height: 30,
-                    cursor: 'pointer', fontSize: 16, color: '#888',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  ×
-                </button>
-              )}
+
+              {/* Кнопка закрытия — всегда видна */}
+              <button
+                onClick={() => { setShowModal(false); setPaymentStatus('idle'); }}
+                style={{
+                  background: '#F3F4F6',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: 34, height: 34,
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#6B7280',
+                  fontSize: 18,
+                  fontWeight: 300,
+                  flexShrink: 0,
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
             </div>
 
-            {/* Контейнер виджета Robokassa */}
+            {/* Контейнер виджета Robokassa — занимает всё доступное место */}
             <div
               id="robokassa-widget-container"
               style={{
                 flex: 1,
                 overflowY: 'auto',
+                overflowX: 'hidden',
                 WebkitOverflowScrolling: 'touch',
+                background: '#FFFFFF',
               }}
             />
 
-            {/* Ожидаем статус */}
+            {/* Нижняя полоска со статусом */}
             <div style={{
-              padding: '12px 20px',
-              background: '#FAFAFA',
-              borderTop: '1px solid #F0F0F0',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '10px 16px',
+              paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+              background: '#F8F9FA',
+              borderTop: '1px solid #EFEFEF',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               flexShrink: 0,
             }}>
-              <Loader2 style={{ width: 14, height: 14, color: '#94A3B8', animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>
-                Статус оплаты обновится автоматически
+              <Loader2 style={{ width: 12, height: 12, color: '#9CA3AF', animation: 'spin 1.5s linear infinite' }} />
+              <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>
+                Статус платежа обновится автоматически
               </span>
             </div>
           </div>
