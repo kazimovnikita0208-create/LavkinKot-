@@ -80,6 +80,19 @@ class PaymentService {
     // Генерируем подпись
     const signature = md5(`${MERCHANT_LOGIN}:${outSum}:${invId}:${PASSWORD1}`);
 
+    // Параметры для iframe-виджета (Robokassa.StartPayment)
+    const iframeParams = {
+      MerchantLogin: MERCHANT_LOGIN,
+      OutSum: outSum,
+      InvId: invId,
+      Description: description,
+      SignatureValue: signature,
+      IsTest: IS_TEST,
+      Culture: 'ru',
+      Encoding: 'utf-8',
+    };
+
+    // Fallback redirect URL на случай если iframe не работает
     const params = new URLSearchParams({
       MerchantLogin: MERCHANT_LOGIN,
       OutSum: outSum,
@@ -88,10 +101,9 @@ class PaymentService {
       SignatureValue: signature,
       IsTest: String(IS_TEST),
     });
-
     const redirectUrl = `${ROBOKASSA_BASE_URL}?${params.toString()}`;
 
-    return { redirectUrl, invId, outSum };
+    return { redirectUrl, invId, outSum, iframeParams };
   }
 
   /**

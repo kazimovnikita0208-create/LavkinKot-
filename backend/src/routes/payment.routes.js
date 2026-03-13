@@ -5,12 +5,16 @@ const {
   robokassaResult,
   robokassaSuccess,
   robokassaFail,
+  getPaymentStatus,
 } = require('../controllers/payment.controller');
 
 const router = Router();
 
 // Создать платёж — требует авторизацию
 router.post('/robokassa/init', authMiddleware, initPayment);
+
+// Проверить статус платежа (для polling из iframe)
+router.get('/status/:invId', authMiddleware, getPaymentStatus);
 
 // Webhook от Robokassa — без authMiddleware (Robokassa не отправляет JWT)
 router.post('/robokassa/result', robokassaResult);

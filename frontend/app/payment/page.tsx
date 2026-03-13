@@ -1,16 +1,27 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, ShieldCheck, Loader2, CreditCard } from 'lucide-react';
+import Script from 'next/script';
+import { ArrowLeft, ShieldCheck, Loader2, CreditCard, CheckCircle, XCircle } from 'lucide-react';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { ordersApi, api } from '@/lib/api';
+
+declare global {
+  interface Window {
+    Robokassa?: {
+      StartPayment: (params: Record<string, unknown>) => void;
+    };
+  }
+}
 
 const planNames: { [key: string]: string } = {
   standard: 'Стандарт',
   plus: 'Плюс',
   premium: 'Премиум',
 };
+
+type PaymentStatus = 'idle' | 'processing' | 'success' | 'fail';
 
 function PaymentContent() {
   const router = useRouter();
@@ -21,9 +32,11 @@ function PaymentContent() {
   const subscriptionAmount = parseFloat(searchParams.get('amount') || '0');
   const returnUrl = searchParams.get('returnUrl') || '';
   const orderId = searchParams.get('orderId') || '';
+  const batchId = searchParams.get('batchId') || '';
 
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [robokassaReady, setRobokassaReady] = useState(false);
 
   const [orderSubtotal, setOrderSubtotal] = useState<number | null>(null);
   const [orderDeliveryFee, setOrderDeliveryFee] = useState<number | null>(null);
@@ -36,9 +49,7 @@ function PaymentContent() {
         setOrderSubtotal(res.data.subtotal);
         setOrderDeliveryFee(res.data.delivery_fee);
       }
-    }).catch(() => {
-      // Используем amount из query если заказ не загрузился
-    }).finally(() => {
+    }).catch(() => {}).finally(() => {
       setOrderLoading(false);
     });
   }, [orderId, paymentType]);
@@ -47,8 +58,34 @@ function PaymentContent() {
   const deliveryFee = orderDeliveryFee ?? 0;
   const finalTotal = paymentType === 'subscription' ? subscriptionAmount : orderTotal + deliveryFee;
 
+  // Polling: проверяем статус оплаты после открытия iframe
+  const pollPaymentStatus = useCallback(async (invId: number) => {
+    const maxAttempts = 60; // 5 минут (каждые 5 секунд)
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(r => setTimeout(r, 5000));
+
+      try {
+        if (paymentType === 'order' && orderId) {
+          const res = await ordersApi.getOrderById(orderId);
+          if (res.data?.payment_status === 'paid') {
+            setPaymentStatus('success');
+            return;
+          }
+        } else if (paymentType === 'subscription') {
+          const res = await api.get<{ status: string }>(`/payments/status/${invId}`);
+          if (res.data?.status === 'paid') {
+            setPaymentStatus('success');
+            return;
+          }
+        }
+      } catch {
+        // тихо продолжаем polling
+      }
+    }
+  }, [orderId, paymentType]);
+
   const handlePay = async () => {
-    setIsProcessing(true);
+    setPaymentStatus('processing');
     setError(null);
 
     try {
@@ -61,39 +98,115 @@ function PaymentContent() {
         body.amount = finalTotal;
       }
 
-      const res = await api.post<{ redirectUrl: string; invId: number }>('/payments/robokassa/init', body);
+      const res = await api.post<{
+        redirectUrl: string;
+        invId: number;
+        iframeParams?: Record<string, unknown>;
+      }>('/payments/robokassa/init', body);
 
-      if (res.data?.redirectUrl) {
-        // Сохраняем флаг для возможного возврата после оплаты
+      if (res.data?.iframeParams && window.Robokassa) {
+        // Открываем iframe-модалку Robokassa
+        if (paymentType === 'subscription' && returnUrl) {
+          sessionStorage.setItem('checkout_return', returnUrl);
+        }
+
+        window.Robokassa.StartPayment(res.data.iframeParams);
+        pollPaymentStatus(res.data.invId);
+      } else if (res.data?.redirectUrl) {
+        // Fallback: обычный редирект
         if (paymentType === 'subscription' && returnUrl) {
           sessionStorage.setItem('checkout_return', returnUrl);
         }
         window.location.href = res.data.redirectUrl;
       } else {
+        setPaymentStatus('idle');
         setError('Не удалось создать платёж. Попробуйте ещё раз.');
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Ошибка создания платежа';
+      setPaymentStatus('idle');
       setError(msg);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
+  const handleSuccessContinue = () => {
+    if (paymentType === 'subscription') {
+      router.push('/profile/subscription');
+    } else if (batchId) {
+      router.push(`/order-confirmed?type=order&orderId=${orderId}`);
+    } else if (orderId) {
+      router.push(`/order-confirmed?type=order&orderId=${orderId}`);
+    } else {
+      router.push('/');
+    }
+  };
+
+  // Экран успешной оплаты
+  if (paymentStatus === 'success') {
+    return (
+      <div className="w-full max-w-[375px] min-h-screen mx-auto" style={{
+        backgroundColor: '#1A2F3A',
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 32,
+      }}>
+        <AnimatedBackground />
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', maxWidth: 300 }}>
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.25) 0%, rgba(56, 142, 60, 0.2) 100%)',
+            border: '2px solid rgba(76, 175, 80, 0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 24px',
+          }}>
+            <CheckCircle style={{ width: 40, height: 40, color: '#4CAF50' }} strokeWidth={2} />
+          </div>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', marginBottom: 12 }}>
+            Оплата прошла!
+          </h1>
+          <p style={{ fontSize: 15, color: '#94A3B8', fontWeight: 500, lineHeight: 1.5, marginBottom: 32 }}>
+            {paymentType === 'subscription'
+              ? 'Подписка успешно активирована.'
+              : 'Заказ оплачен и принят в обработку.'}
+          </p>
+          <button
+            onClick={handleSuccessContinue}
+            style={{
+              width: '100%',
+              background: 'linear-gradient(135deg, #F4A261 0%, #E89551 100%)',
+              color: '#FFFFFF', padding: '16px 24px', borderRadius: 16,
+              border: 'none', cursor: 'pointer',
+              boxShadow: '0 6px 20px rgba(244,162,97,0.4)',
+              fontWeight: 800, fontSize: 16,
+            }}
+          >
+            {paymentType === 'subscription' ? 'К подписке' : 'К заказу'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-[375px] min-h-screen mx-auto" style={{ backgroundColor: '#1A2F3A', position: 'relative', paddingBottom: 140 }}>
+      {/* Robokassa iframe SDK */}
+      <Script
+        src="https://auth.robokassa.ru/Merchant/bundle/robokassa_iframe.js"
+        strategy="afterInteractive"
+        onLoad={() => setRobokassaReady(true)}
+      />
 
       <AnimatedBackground />
 
       {/* HEADER */}
       <header style={{
         padding: '14px 16px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 20,
+        position: 'sticky', top: 0, zIndex: 20,
         background: 'linear-gradient(180deg, rgba(26, 47, 58, 0.98) 0%, rgba(26, 47, 58, 0.95) 100%)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
         borderBottom: '1px solid rgba(244, 162, 97, 0.15)',
         boxShadow: '0 2px 12px rgba(0, 0, 0, 0.25)',
       }}>
@@ -104,14 +217,7 @@ function PaymentContent() {
           >
             <ArrowLeft style={{ width: 22, height: 22, color: '#F4A261' }} strokeWidth={2} />
           </button>
-          <h1 style={{
-            fontSize: 20,
-            fontWeight: 800,
-            color: '#FFFFFF',
-            flex: 1,
-            letterSpacing: '-0.01em',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
-          }}>
+          <h1 style={{ fontSize: 20, fontWeight: 800, color: '#FFFFFF', flex: 1 }}>
             Оплата
           </h1>
           <button
@@ -130,10 +236,8 @@ function PaymentContent() {
         <section style={{ marginBottom: 24 }}>
           <div style={{
             background: 'linear-gradient(135deg, rgba(45, 79, 94, 0.5) 0%, rgba(38, 73, 92, 0.4) 100%)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            borderRadius: 16,
-            padding: 20,
+            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+            borderRadius: 16, padding: 20,
             boxShadow: '0 4px 16px rgba(0,0,0,0.25), 0 0 0 1px rgba(244, 162, 97, 0.1)',
           }}>
             {orderLoading ? (
@@ -151,7 +255,7 @@ function PaymentContent() {
                 <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(244,162,97,0.3), transparent)', marginBottom: 12 }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontSize: 16, color: '#FFFFFF', fontWeight: 800 }}>К оплате</span>
-                  <span style={{ fontSize: 28, color: '#F4A261', fontWeight: 900, letterSpacing: '-0.02em' }}>
+                  <span style={{ fontSize: 28, color: '#F4A261', fontWeight: 900 }}>
                     {finalTotal.toFixed(0)} ₽
                   </span>
                 </div>
@@ -169,7 +273,7 @@ function PaymentContent() {
                 <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(244,162,97,0.3), transparent)', marginBottom: 12 }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontSize: 16, color: '#FFFFFF', fontWeight: 800 }}>К оплате</span>
-                  <span style={{ fontSize: 28, color: '#F4A261', fontWeight: 900, letterSpacing: '-0.02em' }}>
+                  <span style={{ fontSize: 28, color: '#F4A261', fontWeight: 900 }}>
                     {finalTotal.toFixed(0)} ₽
                   </span>
                 </div>
@@ -182,20 +286,14 @@ function PaymentContent() {
         <section style={{ marginBottom: 24 }}>
           <div style={{
             background: 'linear-gradient(135deg, rgba(45, 79, 94, 0.4) 0%, rgba(38, 73, 92, 0.3) 100%)',
-            borderRadius: 14,
-            padding: '14px 16px',
+            borderRadius: 14, padding: '14px 16px',
             border: '1px solid rgba(244, 162, 97, 0.1)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
+                width: 44, height: 44, borderRadius: 12,
                 background: 'linear-gradient(135deg, rgba(244, 162, 97, 0.2) 0%, rgba(232, 149, 81, 0.15) 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
                 <CreditCard style={{ width: 22, height: 22, color: '#F4A261' }} strokeWidth={2} />
               </div>
@@ -207,29 +305,47 @@ function PaymentContent() {
           </div>
         </section>
 
+        {/* Ожидание оплаты */}
+        {paymentStatus === 'processing' && (
+          <section style={{ marginBottom: 24 }}>
+            <div style={{
+              padding: '20px',
+              borderRadius: 16,
+              background: 'linear-gradient(135deg, rgba(244, 162, 97, 0.08) 0%, rgba(232, 149, 81, 0.05) 100%)',
+              border: '1px solid rgba(244, 162, 97, 0.2)',
+              textAlign: 'center',
+            }}>
+              <Loader2 style={{ width: 32, height: 32, color: '#F4A261', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>
+                Ожидаем оплату
+              </p>
+              <p style={{ fontSize: 13, color: '#94A3B8', fontWeight: 500, lineHeight: 1.4 }}>
+                Завершите оплату в окне Robokassa.<br />Статус обновится автоматически.
+              </p>
+            </div>
+          </section>
+        )}
+
         {/* Ошибка */}
         {error && (
           <div style={{
-            marginBottom: 16,
-            padding: '12px 14px',
+            marginBottom: 16, padding: '14px',
             borderRadius: 12,
             background: 'rgba(239, 68, 68, 0.12)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
+            display: 'flex', alignItems: 'center', gap: 10,
           }}>
-            <p style={{ fontSize: 13, color: '#FCA5A5', fontWeight: 500, textAlign: 'center' }}>{error}</p>
+            <XCircle style={{ width: 20, height: 20, color: '#FCA5A5', flexShrink: 0 }} />
+            <p style={{ fontSize: 13, color: '#FCA5A5', fontWeight: 500 }}>{error}</p>
           </div>
         )}
 
         {/* Безопасность */}
         <div style={{
-          padding: '12px',
-          borderRadius: 12,
+          padding: '12px', borderRadius: 12,
           background: 'rgba(76, 175, 80, 0.08)',
           border: '1px solid rgba(76, 175, 80, 0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
         }}>
           <ShieldCheck style={{ width: 16, height: 16, color: '#4CAF50' }} strokeWidth={2} />
           <p style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>
@@ -240,52 +356,42 @@ function PaymentContent() {
 
       {/* НИЖНЯЯ КНОПКА */}
       <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '100%',
-        maxWidth: 375,
-        zIndex: 50,
+        position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '100%', maxWidth: 375, zIndex: 50,
         background: 'linear-gradient(180deg, rgba(26, 47, 58, 0.98) 0%, rgba(26, 47, 58, 1) 100%)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         borderTop: '1px solid rgba(244, 162, 97, 0.2)',
         boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.4)',
         padding: '16px',
       }}>
         <button
           onClick={handlePay}
-          disabled={isProcessing || orderLoading}
+          disabled={paymentStatus === 'processing' || orderLoading || !robokassaReady}
           style={{
             width: '100%',
-            background: (isProcessing || orderLoading)
+            background: (paymentStatus === 'processing' || orderLoading || !robokassaReady)
               ? 'rgba(45, 79, 94, 0.5)'
               : 'linear-gradient(135deg, #F4A261 0%, #E89551 100%)',
-            color: (isProcessing || orderLoading) ? '#94A3B8' : '#FFFFFF',
-            padding: '16px 24px',
-            borderRadius: 16,
-            border: 'none',
-            cursor: (isProcessing || orderLoading) ? 'not-allowed' : 'pointer',
-            boxShadow: (isProcessing || orderLoading)
+            color: (paymentStatus === 'processing' || orderLoading || !robokassaReady) ? '#94A3B8' : '#FFFFFF',
+            padding: '16px 24px', borderRadius: 16, border: 'none',
+            cursor: (paymentStatus === 'processing' || orderLoading || !robokassaReady) ? 'not-allowed' : 'pointer',
+            boxShadow: (paymentStatus === 'processing' || orderLoading || !robokassaReady)
               ? '0 4px 16px rgba(0,0,0,0.25)'
               : '0 6px 20px rgba(244,162,97,0.4)',
             transition: 'all 0.2s ease',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            fontWeight: 800,
-            fontSize: 16,
-            letterSpacing: '-0.01em',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            fontWeight: 800, fontSize: 16,
           }}
         >
-          {isProcessing && <Loader2 style={{ width: 20, height: 20, animation: 'spin 1s linear infinite' }} />}
-          {isProcessing ? 'Переход к оплате...' : `Оплатить ${finalTotal.toFixed(0)} ₽`}
+          {paymentStatus === 'processing' && <Loader2 style={{ width: 20, height: 20, animation: 'spin 1s linear infinite' }} />}
+          {paymentStatus === 'processing'
+            ? 'Ожидаем оплату...'
+            : `Оплатить ${finalTotal.toFixed(0)} ₽`}
         </button>
         <p style={{ textAlign: 'center', fontSize: 11, color: '#64748B', marginTop: 8, fontWeight: 500 }}>
-          Вы будете перенаправлены на страницу Robokassa
+          {paymentStatus === 'processing'
+            ? 'Не закрывайте приложение до завершения оплаты'
+            : 'Оплата откроется во всплывающем окне'}
         </p>
       </div>
     </div>
@@ -297,9 +403,7 @@ export default function PaymentPage() {
     <Suspense fallback={
       <div className="w-full max-w-[375px] min-h-screen mx-auto" style={{
         backgroundColor: '#1A2F3A',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <AnimatedBackground />
         <div style={{ color: '#F4A261', fontSize: 18, fontWeight: 700, position: 'relative', zIndex: 10 }}>

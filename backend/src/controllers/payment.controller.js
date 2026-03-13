@@ -69,4 +69,25 @@ const robokassaFail = asyncHandler(async (req, res) => {
   res.redirect(`${frontendUrl}/payment/fail`);
 });
 
-module.exports = { initPayment, robokassaResult, robokassaSuccess, robokassaFail };
+/**
+ * GET /api/payments/status/:invId
+ * Проверить статус платежа (для polling из iframe)
+ */
+const getPaymentStatus = asyncHandler(async (req, res) => {
+  const { invId } = req.params;
+  const { supabase } = require('../config/supabase');
+
+  const { data: payment, error } = await supabase
+    .from('payment_transactions')
+    .select('status, type, order_id, plan_id')
+    .eq('inv_id', Number(invId))
+    .single();
+
+  if (error || !payment) {
+    throw new AppError('Payment not found', 404);
+  }
+
+  res.json({ success: true, data: { status: payment.status, type: payment.type } });
+});
+
+module.exports = { initPayment, robokassaResult, robokassaSuccess, robokassaFail, getPaymentStatus };
