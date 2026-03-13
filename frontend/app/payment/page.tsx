@@ -39,6 +39,9 @@ function PaymentContent() {
   const [error, setError] = useState<string | null>(null);
   const [robokassaReady, setRobokassaReady] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [currentInvId, setCurrentInvId] = useState<number | null>(null);
+  const [successCountdown, setSuccessCountdown] = useState(3);
+  const [checkingStatus, setCheckingStatus] = useState(false);
 
   const [orderSubtotal, setOrderSubtotal] = useState<number | null>(null);
   const [orderDeliveryFee, setOrderDeliveryFee] = useState<number | null>(null);
@@ -60,31 +63,75 @@ function PaymentContent() {
   const deliveryFee = orderDeliveryFee ?? 0;
   const finalTotal = paymentType === 'subscription' ? subscriptionAmount : orderTotal + deliveryFee;
 
-  // Polling: проверяем статус оплаты после открытия iframe
-  const pollPaymentStatus = useCallback(async (invId: number) => {
-    const maxAttempts = 60; // 5 минут (каждые 5 секунд)
-    for (let i = 0; i < maxAttempts; i++) {
-      await new Promise(r => setTimeout(r, 5000));
+  // Проверить статус оплаты прямо сейчас
+  const checkPaymentNow = useCallback(async (invId: number): Promise<boolean> => {
+    try {
+      if (paymentType === 'order' && orderId) {
+        const res = await ordersApi.getOrderById(orderId);
+        return res.data?.payment_status === 'paid';
+      } else if (paymentType === 'subscription') {
+        const res = await api.get<{ status: string }>(`/payments/status/${invId}`);
+        return res.data?.status === 'paid';
+      }
+    } catch { /* ignore */ }
+    return false;
+  }, [orderId, paymentType]);
 
-      try {
-        if (paymentType === 'order' && orderId) {
-          const res = await ordersApi.getOrderById(orderId);
-          if (res.data?.payment_status === 'paid') {
-            setPaymentStatus('success');
-            return;
-          }
-        } else if (paymentType === 'subscription') {
-          const res = await api.get<{ status: string }>(`/payments/status/${invId}`);
-          if (res.data?.status === 'paid') {
-            setPaymentStatus('success');
-            return;
-          }
-        }
-      } catch {
-        // тихо продолжаем polling
+  // Polling: каждые 4 секунды проверяем оплачено ли
+  const pollPaymentStatus = useCallback(async (invId: number) => {
+    const maxAttempts = 75; // 5 минут
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(r => setTimeout(r, 4000));
+      const paid = await checkPaymentNow(invId);
+      if (paid) {
+        setShowModal(false);
+        setPaymentStatus('success');
+        return;
       }
     }
-  }, [orderId, paymentType]);
+  }, [checkPaymentNow]);
+
+  // Автоотсчёт и редирект после успешной оплаты
+  useEffect(() => {
+    if (paymentStatus !== 'success') return;
+    setSuccessCountdown(3);
+    const interval = setInterval(() => {
+      setSuccessCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          // Редирект на нужную страницу
+          if (paymentType === 'subscription') {
+            router.push('/profile/subscription');
+          } else if (orderId) {
+            router.push(`/order-confirmed?type=order&orderId=${orderId}`);
+          } else {
+            router.push('/');
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [paymentStatus, paymentType, orderId, router]);
+
+  // Закрыть модалку — сначала проверяем статус оплаты
+  const handleModalClose = useCallback(async () => {
+    if (!currentInvId) {
+      setShowModal(false);
+      setPaymentStatus('idle');
+      return;
+    }
+    setCheckingStatus(true);
+    const paid = await checkPaymentNow(currentInvId);
+    setCheckingStatus(false);
+    setShowModal(false);
+    if (paid) {
+      setPaymentStatus('success');
+    } else {
+      setPaymentStatus('idle');
+    }
+  }, [currentInvId, checkPaymentNow]);
 
   const handlePay = async () => {
     setPaymentStatus('processing');
@@ -111,9 +158,9 @@ function PaymentContent() {
           sessionStorage.setItem('checkout_return', returnUrl);
         }
 
-        // Показываем нашу модалку, затем рендерим виджет внутрь контейнера
+        setCurrentInvId(res.data.invId);
         setShowModal(true);
-        await new Promise(r => setTimeout(r, 100)); // дать время DOM обновиться
+        await new Promise(r => setTimeout(r, 120));
 
         const params = {
           ...res.data.iframeParams,
@@ -138,51 +185,59 @@ function PaymentContent() {
     }
   };
 
-  const handleSuccessContinue = () => {
-    if (paymentType === 'subscription') {
-      router.push('/profile/subscription');
-    } else if (batchId) {
-      router.push(`/order-confirmed?type=order&orderId=${orderId}`);
-    } else if (orderId) {
-      router.push(`/order-confirmed?type=order&orderId=${orderId}`);
-    } else {
-      router.push('/');
-    }
-  };
 
   // Экран успешной оплаты
   if (paymentStatus === 'success') {
     return (
       <div className="w-full max-w-[375px] min-h-screen mx-auto" style={{
-        backgroundColor: '#1A2F3A',
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 32,
+        backgroundColor: '#1A2F3A', position: 'relative',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', padding: 32,
       }}>
         <AnimatedBackground />
         <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', maxWidth: 300 }}>
+          {/* Иконка успеха с анимацией */}
           <div style={{
-            width: 80, height: 80, borderRadius: '50%',
-            background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.25) 0%, rgba(56, 142, 60, 0.2) 100%)',
-            border: '2px solid rgba(76, 175, 80, 0.4)',
+            width: 90, height: 90, borderRadius: '50%',
+            background: 'linear-gradient(135deg, rgba(76,175,80,0.25) 0%, rgba(56,142,60,0.2) 100%)',
+            border: '2px solid rgba(76,175,80,0.5)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 24px',
+            margin: '0 auto 28px',
+            animation: 'fadeInUp 0.4s ease both',
           }}>
-            <CheckCircle style={{ width: 40, height: 40, color: '#4CAF50' }} strokeWidth={2} />
+            <CheckCircle style={{ width: 46, height: 46, color: '#4CAF50' }} strokeWidth={2} />
           </div>
-          <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', marginBottom: 12 }}>
-            Оплата прошла!
+
+          <h1 style={{
+            fontSize: 28, fontWeight: 900, color: '#FFFFFF', marginBottom: 10,
+            animation: 'fadeInUp 0.4s 0.1s ease both',
+          }}>
+            Оплата прошла! 🎉
           </h1>
-          <p style={{ fontSize: 15, color: '#94A3B8', fontWeight: 500, lineHeight: 1.5, marginBottom: 32 }}>
+
+          <p style={{
+            fontSize: 15, color: '#94A3B8', fontWeight: 500, lineHeight: 1.6, marginBottom: 8,
+            animation: 'fadeInUp 0.4s 0.2s ease both',
+          }}>
             {paymentType === 'subscription'
-              ? 'Подписка успешно активирована.'
+              ? 'Подписка успешно активирована. Доставки списываются автоматически.'
               : 'Заказ оплачен и принят в обработку.'}
           </p>
+
+          {/* Счётчик */}
+          <p style={{
+            fontSize: 13, color: '#64A8C8', fontWeight: 600, marginBottom: 32,
+            animation: 'fadeInUp 0.4s 0.3s ease both',
+          }}>
+            Перенаправляем через {successCountdown} сек...
+          </p>
+
           <button
-            onClick={handleSuccessContinue}
+            onClick={() => {
+              if (paymentType === 'subscription') router.push('/profile/subscription');
+              else if (orderId) router.push(`/order-confirmed?type=order&orderId=${orderId}`);
+              else router.push('/');
+            }}
             style={{
               width: '100%',
               background: 'linear-gradient(135deg, #F4A261 0%, #E89551 100%)',
@@ -190,10 +245,79 @@ function PaymentContent() {
               border: 'none', cursor: 'pointer',
               boxShadow: '0 6px 20px rgba(244,162,97,0.4)',
               fontWeight: 800, fontSize: 16,
+              animation: 'fadeInUp 0.4s 0.35s ease both',
             }}
           >
-            {paymentType === 'subscription' ? 'К подписке' : 'К заказу'}
+            {paymentType === 'subscription' ? 'Перейти к подписке' : 'К заказу'}
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Экран ошибки оплаты
+  if (paymentStatus === 'fail') {
+    return (
+      <div className="w-full max-w-[375px] min-h-screen mx-auto" style={{
+        backgroundColor: '#1A2F3A', position: 'relative',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', padding: 32,
+      }}>
+        <AnimatedBackground />
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', maxWidth: 300 }}>
+          <div style={{
+            width: 90, height: 90, borderRadius: '50%',
+            background: 'rgba(239,68,68,0.15)',
+            border: '2px solid rgba(239,68,68,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 28px',
+            animation: 'fadeInUp 0.4s ease both',
+          }}>
+            <XCircle style={{ width: 46, height: 46, color: '#EF4444' }} strokeWidth={2} />
+          </div>
+
+          <h1 style={{
+            fontSize: 26, fontWeight: 900, color: '#FFFFFF', marginBottom: 10,
+            animation: 'fadeInUp 0.4s 0.1s ease both',
+          }}>
+            Оплата не прошла
+          </h1>
+
+          <p style={{
+            fontSize: 15, color: '#94A3B8', fontWeight: 500, lineHeight: 1.6, marginBottom: 32,
+            animation: 'fadeInUp 0.4s 0.2s ease both',
+          }}>
+            Что-то пошло не так. Попробуйте оплатить снова или выберите другой способ оплаты.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, animation: 'fadeInUp 0.4s 0.3s ease both' }}>
+            <button
+              onClick={() => { setPaymentStatus('idle'); setShowModal(false); }}
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, #F4A261 0%, #E89551 100%)',
+                color: '#FFFFFF', padding: '16px 24px', borderRadius: 16,
+                border: 'none', cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(244,162,97,0.4)',
+                fontWeight: 800, fontSize: 16,
+              }}
+            >
+              Попробовать снова
+            </button>
+
+            <button
+              onClick={() => router.push('/')}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                color: '#64748B', padding: '14px 24px', borderRadius: 16,
+                border: '1px solid rgba(100,116,139,0.3)',
+                cursor: 'pointer', fontWeight: 600, fontSize: 15,
+              }}
+            >
+              На главную
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -375,9 +499,8 @@ function PaymentContent() {
             animation: 'fadeIn 0.25s ease',
           }}
           onClick={(e) => {
-            if (e.target === e.currentTarget && paymentStatus !== 'processing') {
-              setShowModal(false);
-              setPaymentStatus('idle');
+            if (e.target === e.currentTarget) {
+              handleModalClose();
             }
           }}
         >
@@ -439,22 +562,20 @@ function PaymentContent() {
               </div>
 
               <button
-                onClick={() => { setShowModal(false); setPaymentStatus('idle'); }}
+                onClick={handleModalClose}
+                disabled={checkingStatus}
                 style={{
-                  background: '#F3F4F6',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: 34, height: 34,
-                  cursor: 'pointer',
+                  background: '#F3F4F6', border: 'none',
+                  borderRadius: '50%', width: 34, height: 34,
+                  cursor: checkingStatus ? 'default' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#6B7280',
-                  fontSize: 20,
-                  fontWeight: 300,
-                  flexShrink: 0,
-                  lineHeight: 1,
+                  color: '#6B7280', fontSize: 20, fontWeight: 300,
+                  flexShrink: 0, lineHeight: 1, opacity: checkingStatus ? 0.5 : 1,
                 }}
               >
-                ×
+                {checkingStatus
+                  ? <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
+                  : '×'}
               </button>
             </div>
 
@@ -470,19 +591,49 @@ function PaymentContent() {
               }}
             />
 
-            {/* Нижняя полоска со статусом */}
+            {/* Нижняя полоска — кнопка проверки и статус */}
             <div style={{
               padding: '10px 16px',
               paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
               background: '#F8F9FA',
               borderTop: '1px solid #EFEFEF',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
               flexShrink: 0,
             }}>
-              <Loader2 style={{ width: 12, height: 12, color: '#9CA3AF', animation: 'spin 1.5s linear infinite' }} />
-              <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>
-                Статус платежа обновится автоматически
-              </span>
+              <button
+                onClick={async () => {
+                  if (!currentInvId) return;
+                  setCheckingStatus(true);
+                  const paid = await checkPaymentNow(currentInvId);
+                  setCheckingStatus(false);
+                  if (paid) {
+                    setShowModal(false);
+                    setPaymentStatus('success');
+                  } else {
+                    setPaymentStatus('fail');
+                    setShowModal(false);
+                  }
+                }}
+                disabled={checkingStatus}
+                style={{
+                  background: 'linear-gradient(135deg, #F4A261 0%, #E89551 100%)',
+                  color: '#FFFFFF', padding: '10px 24px', borderRadius: 12,
+                  border: 'none', cursor: checkingStatus ? 'default' : 'pointer',
+                  fontWeight: 700, fontSize: 13,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  opacity: checkingStatus ? 0.7 : 1, width: '100%', justifyContent: 'center',
+                }}
+              >
+                {checkingStatus
+                  ? <><Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> Проверяем...</>
+                  : '✓ Я уже оплатил'}
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <Loader2 style={{ width: 11, height: 11, color: '#9CA3AF', animation: 'spin 2s linear infinite' }} />
+                <span style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 500 }}>
+                  Статус обновляется автоматически
+                </span>
+              </div>
             </div>
           </div>
         </div>
