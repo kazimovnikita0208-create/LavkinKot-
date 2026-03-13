@@ -375,8 +375,8 @@ function PaymentContent() {
             animation: 'fadeIn 0.2s ease',
           }}
           onClick={(e) => {
-            // Закрыть по клику на backdrop только если не в процессе
-            if (e.target === e.currentTarget && paymentStatus !== 'success') {
+            // Закрыть по клику на backdrop только если не идёт оплата
+            if (e.target === e.currentTarget && paymentStatus !== 'processing') {
               setShowModal(false);
               setPaymentStatus('idle');
             }
@@ -410,7 +410,7 @@ function PaymentContent() {
                   Безопасная оплата
                 </span>
               </div>
-              {paymentStatus !== 'success' && (
+              {paymentStatus !== 'processing' && (
                 <button
                   onClick={() => { setShowModal(false); setPaymentStatus('idle'); }}
                   style={{
