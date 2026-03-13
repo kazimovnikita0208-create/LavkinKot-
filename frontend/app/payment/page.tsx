@@ -385,7 +385,7 @@ function PaymentContent() {
             width: '100%',
             maxWidth: 375,
             margin: '0 auto',
-            background: '#1A2F3A',
+            background: '#F8F9FA',
             borderRadius: '20px 20px 0 0',
             height: '88vh',
             display: 'flex',
@@ -400,21 +400,21 @@ function PaymentContent() {
               justifyContent: 'center',
               paddingTop: 10,
               paddingBottom: 6,
-              background: '#1A2F3A',
+              background: '#FFFFFF',
               flexShrink: 0,
             }}>
               <div style={{
                 width: 36, height: 4,
                 borderRadius: 2,
-                background: 'rgba(255,255,255,0.2)',
+                background: '#D1D5DB',
               }} />
             </div>
 
             {/* Шапка */}
             <div style={{
               padding: '10px 16px 12px',
-              background: '#1A2F3A',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              background: '#FFFFFF',
+              borderBottom: '1px solid #EFEFEF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -423,16 +423,16 @@ function PaymentContent() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{
                   width: 30, height: 30, borderRadius: 8,
-                  background: 'rgba(76, 175, 80, 0.15)',
+                  background: 'rgba(76, 175, 80, 0.12)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <ShieldCheck style={{ width: 17, height: 17, color: '#4CAF50' }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', lineHeight: 1.2 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#111', lineHeight: 1.2 }}>
                     Безопасная оплата
                   </p>
-                  <p style={{ fontSize: 10, color: '#64A8C8', fontWeight: 500 }}>
+                  <p style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 500 }}>
                     Защищено Robokassa · SSL
                   </p>
                 </div>
@@ -441,13 +441,13 @@ function PaymentContent() {
               <button
                 onClick={() => { setShowModal(false); setPaymentStatus('idle'); }}
                 style={{
-                  background: 'rgba(255,255,255,0.1)',
+                  background: '#F3F4F6',
                   border: 'none',
                   borderRadius: '50%',
                   width: 34, height: 34,
                   cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#94A3B8',
+                  color: '#6B7280',
                   fontSize: 20,
                   fontWeight: 300,
                   flexShrink: 0,
@@ -458,7 +458,7 @@ function PaymentContent() {
               </button>
             </div>
 
-            {/* Контейнер виджета Robokassa с тёмной темой через CSS */}
+            {/* Контейнер виджета Robokassa */}
             <div
               id="robokassa-widget-container"
               style={{
@@ -466,7 +466,7 @@ function PaymentContent() {
                 overflowY: 'auto',
                 overflowX: 'hidden',
                 WebkitOverflowScrolling: 'touch',
-                background: '#1E3545',
+                background: '#FFFFFF',
               }}
             />
 
@@ -474,13 +474,13 @@ function PaymentContent() {
             <div style={{
               padding: '10px 16px',
               paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
-              background: '#162838',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
+              background: '#F8F9FA',
+              borderTop: '1px solid #EFEFEF',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               flexShrink: 0,
             }}>
-              <Loader2 style={{ width: 12, height: 12, color: '#64A8C8', animation: 'spin 1.5s linear infinite' }} />
-              <span style={{ fontSize: 11, color: '#64A8C8', fontWeight: 500 }}>
+              <Loader2 style={{ width: 12, height: 12, color: '#9CA3AF', animation: 'spin 1.5s linear infinite' }} />
+              <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 500 }}>
                 Статус платежа обновится автоматически
               </span>
             </div>
