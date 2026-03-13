@@ -11,6 +11,7 @@ declare global {
   interface Window {
     Robokassa?: {
       StartPayment: (params: Record<string, unknown>) => void;
+      Render: (params: Record<string, unknown>, containerId: string) => void;
     };
   }
 }
@@ -37,6 +38,7 @@ function PaymentContent() {
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [robokassaReady, setRobokassaReady] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const [orderSubtotal, setOrderSubtotal] = useState<number | null>(null);
   const [orderDeliveryFee, setOrderDeliveryFee] = useState<number | null>(null);
@@ -105,12 +107,19 @@ function PaymentContent() {
       }>('/payments/robokassa/init', body);
 
       if (res.data?.iframeParams && window.Robokassa) {
-        // Открываем iframe-модалку Robokassa
         if (paymentType === 'subscription' && returnUrl) {
           sessionStorage.setItem('checkout_return', returnUrl);
         }
 
-        window.Robokassa.StartPayment(res.data.iframeParams);
+        // Показываем нашу модалку, затем рендерим виджет внутрь контейнера
+        setShowModal(true);
+        await new Promise(r => setTimeout(r, 100)); // дать время DOM обновиться
+
+        const params = {
+          ...res.data.iframeParams,
+          Settings: JSON.stringify({ Mode: 'widget' }),
+        };
+        window.Robokassa.Render(params, 'robokassa-widget-container');
         pollPaymentStatus(res.data.invId);
       } else if (res.data?.redirectUrl) {
         // Fallback: обычный редирект
@@ -353,6 +362,95 @@ function PaymentContent() {
           </p>
         </div>
       </main>
+
+      {/* ─── МОДАЛЬНОЕ ОКНО ОПЛАТЫ ─────────────────────────────────── */}
+      {showModal && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 100,
+            display: 'flex', alignItems: 'flex-end',
+            background: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            animation: 'fadeIn 0.2s ease',
+          }}
+          onClick={(e) => {
+            // Закрыть по клику на backdrop только если не в процессе
+            if (e.target === e.currentTarget && paymentStatus !== 'success') {
+              setShowModal(false);
+              setPaymentStatus('idle');
+            }
+          }}
+        >
+          <div style={{
+            width: '100%',
+            maxWidth: 375,
+            margin: '0 auto',
+            background: '#FFFFFF',
+            borderRadius: '24px 24px 0 0',
+            overflow: 'hidden',
+            animation: 'slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            {/* Шапка модалки */}
+            <div style={{
+              padding: '14px 20px 10px',
+              background: '#FFFFFF',
+              borderBottom: '1px solid #F0F0F0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexShrink: 0,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <ShieldCheck style={{ width: 18, height: 18, color: '#4CAF50' }} />
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#1A1A1A' }}>
+                  Безопасная оплата
+                </span>
+              </div>
+              {paymentStatus !== 'success' && (
+                <button
+                  onClick={() => { setShowModal(false); setPaymentStatus('idle'); }}
+                  style={{
+                    background: '#F5F5F5', border: 'none',
+                    borderRadius: '50%', width: 30, height: 30,
+                    cursor: 'pointer', fontSize: 16, color: '#888',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            {/* Контейнер виджета Robokassa */}
+            <div
+              id="robokassa-widget-container"
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+              }}
+            />
+
+            {/* Ожидаем статус */}
+            <div style={{
+              padding: '12px 20px',
+              background: '#FAFAFA',
+              borderTop: '1px solid #F0F0F0',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              flexShrink: 0,
+            }}>
+              <Loader2 style={{ width: 14, height: 14, color: '#94A3B8', animation: 'spin 1s linear infinite' }} />
+              <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 500 }}>
+                Статус оплаты обновится автоматически
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* НИЖНЯЯ КНОПКА */}
       <div style={{
