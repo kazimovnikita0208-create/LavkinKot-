@@ -29,36 +29,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const tryTelegramAutoLogin = async (): Promise<boolean> => {
     if (typeof window === 'undefined') return false;
 
-    console.log('[Auth] Trying Telegram auto-login...');
-    console.log('[Auth] window.Telegram exists:', !!window.Telegram);
-    console.log('[Auth] window.Telegram.WebApp exists:', !!window.Telegram?.WebApp);
-
     let initData = '';
     for (let i = 0; i < 12; i++) {
       initData = window.Telegram?.WebApp?.initData || '';
       if (initData) break;
-      console.log(`[Auth] Waiting for initData... attempt ${i + 1}/12`);
       await new Promise(r => setTimeout(r, 250));
     }
 
-    console.log('[Auth] initData length:', initData.length);
-    console.log('[Auth] initData preview:', initData.substring(0, 80) + '...');
-
-    if (!initData) {
-      console.log('[Auth] Telegram initData not available after 3s');
-      return false;
-    }
+    if (!initData) return false;
 
     try {
-      console.log('[Auth] Sending initData to backend...');
       const response = await authApi.loginWithTelegram(initData);
-      console.log('[Auth] Backend response:', response.success);
       if (response.success && response.data) {
         api.setToken(response.data.token);
         const profileResponse = await profileApi.getProfile();
         if (profileResponse.success && profileResponse.data) {
           setUser(profileResponse.data);
-          console.log('[Auth] Auto-login successful!');
           return true;
         }
       }
