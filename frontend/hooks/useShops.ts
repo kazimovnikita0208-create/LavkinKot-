@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { shopsApi, Shop, Product } from '@/lib/api';
+import { cacheGet, cacheSet, cacheIsStale } from '@/lib/cache';
 
 interface UseShopsOptions {
   category?: string;
@@ -24,22 +25,23 @@ interface UseShopsResult {
 }
 
 export function useShops(options: UseShopsOptions = {}): UseShopsResult {
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { category, search, page, limit } = options;
+  const cacheKey = `shops_${category || ''}_${search || ''}_${page || 1}_${limit || 20}`;
+
+  const [shops, setShops] = useState<Shop[]>(() => cacheGet<Shop[]>(cacheKey) || []);
+  const [isLoading, setIsLoading] = useState(() => !cacheGet<Shop[]>(cacheKey));
   const [error, setError] = useState<Error | null>(null);
   const [pagination, setPagination] = useState<UseShopsResult['pagination']>(null);
 
-  const { category, search, page, limit } = options;
-
   const fetchShops = useCallback(async () => {
     try {
-      setIsLoading(true);
       setError(null);
-      
       const response = await shopsApi.getShops({ category, search, page, limit });
-      
+
       if (response.success) {
-        setShops(response.data || []);
+        const data = response.data || [];
+        setShops(data);
+        cacheSet(cacheKey, data);
         if (response.pagination) {
           setPagination({
             page: response.pagination.page,
@@ -52,16 +54,25 @@ export function useShops(options: UseShopsOptions = {}): UseShopsResult {
         setError(new Error('Failed to fetch shops'));
       }
     } catch (err) {
-      console.error('useShops error:', err);
-      setError(err instanceof Error ? err : new Error('Failed to fetch shops'));
+      if (shops.length === 0) {
+        setError(err instanceof Error ? err : new Error('Failed to fetch shops'));
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [category, search, page, limit]);
+  }, [category, search, page, limit, cacheKey, shops.length]);
 
   useEffect(() => {
-    fetchShops();
-  }, [fetchShops]);
+    // Если кэш устарел — фетчим, иначе показываем кэш и фетчим в фоне тихо
+    if (cacheIsStale(cacheKey)) {
+      setIsLoading(shops.length === 0);
+      fetchShops();
+    } else {
+      // Данные свежие — обновляем в фоне без спиннера
+      fetchShops();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cacheKey]);
 
   return { shops, isLoading, error, pagination, refetch: fetchShops };
 }
@@ -73,36 +84,32 @@ interface UseShopResult {
 }
 
 export function useShop(shopId: string): UseShopResult {
-  const [shop, setShop] = useState<Shop | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const cacheKey = `shop_${shopId}`;
+  const [shop, setShop] = useState<Shop | null>(() => cacheGet<Shop>(cacheKey));
+  const [isLoading, setIsLoading] = useState(() => !cacheGet<Shop>(cacheKey));
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!shopId) { setIsLoading(false); return; }
+
     const fetchShop = async () => {
-      if (!shopId) {
-        setIsLoading(false);
-        return;
-      }
-      
       try {
-        setIsLoading(true);
         setError(null);
         const response = await shopsApi.getShopById(shopId);
-        
         if (response.success && response.data) {
           setShop(response.data);
-        } else {
-          setError(new Error('Shop not found'));
+          cacheSet(cacheKey, response.data);
         }
       } catch (err) {
-        console.error('useShop error:', err);
-        setError(err instanceof Error ? err : new Error('Failed to fetch shop'));
+        if (!shop) setError(err instanceof Error ? err : new Error('Failed to fetch shop'));
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchShop();
+    if (cacheIsStale(cacheKey)) fetchShop();
+    else { fetchShop(); } // тихое фоновое обновление
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shopId]);
 
   return { shop, isLoading, error };
@@ -123,46 +130,49 @@ interface UseShopProductsResult {
 }
 
 export function useShopProducts(shopId: string, options: UseShopProductsOptions = {}): UseShopProductsResult {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { category, page, limit } = options;
+  const cacheKey = `shop_products_${shopId}_${category || ''}_${page || 1}`;
+
+  const [products, setProducts] = useState<Product[]>(() => cacheGet<Product[]>(cacheKey) || []);
+  const [categories, setCategories] = useState<string[]>(() => cacheGet<string[]>(`shop_cats_${shopId}`) || []);
+  const [isLoading, setIsLoading] = useState(() => !cacheGet<Product[]>(cacheKey));
   const [error, setError] = useState<Error | null>(null);
 
-  const { category, page, limit } = options;
-
   const fetchData = useCallback(async () => {
-    if (!shopId) {
-      setIsLoading(false);
-      return;
-    }
-    
+    if (!shopId) { setIsLoading(false); return; }
+
     try {
-      setIsLoading(true);
       setError(null);
-      
       const [productsResponse, categoriesResponse] = await Promise.all([
         shopsApi.getShopProducts(shopId, { category, page, limit }),
         shopsApi.getShopCategories(shopId),
       ]);
-      
+
       if (productsResponse.success) {
-        setProducts(productsResponse.data || []);
+        const data = productsResponse.data || [];
+        setProducts(data);
+        cacheSet(cacheKey, data);
       }
-      
+
       if (categoriesResponse.success) {
-        setCategories(categoriesResponse.data || []);
+        const cats = categoriesResponse.data || [];
+        setCategories(cats);
+        cacheSet(`shop_cats_${shopId}`, cats);
       }
     } catch (err) {
-      console.error('useShopProducts error:', err);
-      setError(err instanceof Error ? err : new Error('Failed to fetch shop products'));
+      if (products.length === 0) {
+        setError(err instanceof Error ? err : new Error('Failed to fetch shop products'));
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [shopId, category, page, limit]);
+  }, [shopId, category, page, limit, cacheKey, products.length]);
 
   useEffect(() => {
+    if (cacheIsStale(cacheKey)) setIsLoading(products.length === 0);
     fetchData();
-  }, [fetchData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cacheKey]);
 
   return { products, categories, isLoading, error, refetch: fetchData };
 }

@@ -18,13 +18,32 @@ interface ApiResponse<T> {
   };
 }
 
+// ─── In-memory GET cache (stale-while-revalidate) ────────────────────────────
+const _memCache = new Map<string, { data: unknown; expires: number }>();
+const CACHE_TTL_MS = 3 * 60 * 1000; // 3 минуты
+
+function memCacheGet<T>(key: string): T | null {
+  const entry = _memCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expires) { _memCache.delete(key); return null; }
+  return entry.data as T;
+}
+function memCacheSet(key: string, data: unknown, ttl = CACHE_TTL_MS) {
+  _memCache.set(key, { data, expires: Date.now() + ttl });
+}
+export function invalidateCache(prefix: string) {
+  for (const key of _memCache.keys()) {
+    if (key.startsWith(prefix)) _memCache.delete(key);
+  }
+}
+
 class ApiClient {
   private baseUrl: string;
   private token: string | null = null;
+  private _reauthing = false;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
-    // Загружаем токен из localStorage при инициализации
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('auth_token');
     }
@@ -45,12 +64,46 @@ class ApiClient {
     return this.token;
   }
 
+  // Пробуем получить новый токен через Telegram initData
+  private async tryReauth(): Promise<boolean> {
+    if (this._reauthing) return false;
+    if (typeof window === 'undefined') return false;
+    const initData = window.Telegram?.WebApp?.initData;
+    if (!initData) return false;
+
+    this._reauthing = true;
+    try {
+      const resp = await fetch(`${this.baseUrl}/auth/telegram`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData }),
+      });
+      if (!resp.ok) return false;
+      const json = await resp.json();
+      if (json.success && json.data?.token) {
+        this.setToken(json.data.token);
+        return true;
+      }
+    } catch { /* ignore */ } finally {
+      this._reauthing = false;
+    }
+    return false;
+  }
+
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    _retry = false
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
+    // GET-запросы: сначала проверяем кэш, параллельно обновляем
+    const isGet = !options.method || options.method === 'GET';
+    if (isGet) {
+      const cached = memCacheGet<ApiResponse<T>>(url);
+      if (cached) return cached;
+    }
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -61,21 +114,21 @@ class ApiClient {
     }
 
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
-
+      const response = await fetch(url, { ...options, headers });
       const data = await response.json();
 
       if (!response.ok) {
-        // При невалидном/истёкшем токене — только очищаем токен,
-        // компонент сам покажет состояние "не авторизован"
-        if (response.status === 401) {
+        if (response.status === 401 && !_retry) {
+          // Пробуем переавторизоваться через Telegram и повторить запрос
+          const reauthed = await this.tryReauth();
+          if (reauthed) return this.request<T>(endpoint, options, true);
           this.setToken(null);
         }
         throw new Error(data.error || 'Request failed');
       }
+
+      // Кэшируем успешные GET
+      if (isGet) memCacheSet(url, data);
 
       return data;
     } catch (error) {

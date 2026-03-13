@@ -74,38 +74,55 @@ interface UseOrderResult {
   refetch: () => Promise<void>;
 }
 
+// Статусы при которых заказ считается активным (нужен поллинг)
+const ACTIVE_STATUSES = new Set(['created', 'confirmed', 'preparing', 'ready', 'delivering', 'in_transit']);
+const POLL_INTERVAL_MS = 8000; // 8 секунд
+
 export function useOrder(orderId: string): UseOrderResult {
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchOrder = useCallback(async () => {
-    if (!orderId) {
-      setIsLoading(false);
-      return;
-    }
-    
+    if (!orderId) { setIsLoading(false); return; }
+
     try {
-      setIsLoading(true);
       setError(null);
       const response = await ordersApi.getOrderById(orderId);
-      
       if (response.success && response.data) {
         setOrder(response.data);
       } else {
         setError(new Error('Order not found'));
       }
     } catch (err) {
-      console.error('useOrder error:', err);
-      setError(err instanceof Error ? err : new Error('Failed to fetch order'));
+      if (!order) setError(err instanceof Error ? err : new Error('Failed to fetch order'));
     } finally {
       setIsLoading(false);
     }
-  }, [orderId]);
+  }, [orderId, order]);
 
   useEffect(() => {
     fetchOrder();
-  }, [fetchOrder]);
+  }, [orderId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Автообновление статуса для активных заказов
+  useEffect(() => {
+    if (!order) return;
+    if (!ACTIVE_STATUSES.has(order.status)) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await ordersApi.getOrderStatus(orderId);
+        if (response.success && response.data && response.data.status !== order.status) {
+          // Статус изменился — перезагружаем полные данные
+          const full = await ordersApi.getOrderById(orderId);
+          if (full.success && full.data) setOrder(full.data);
+        }
+      } catch { /* тихо */ }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [order?.status, orderId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { order, isLoading, error, refetch: fetchOrder };
 }
