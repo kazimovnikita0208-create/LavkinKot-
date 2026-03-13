@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { Providers } from '@/components/Providers';
 
@@ -22,6 +23,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru">
+      <head>
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body className="min-h-screen flex justify-center" style={{ backgroundColor: '#0D1B24' }} suppressHydrationWarning>
         <Providers>
           <div className="w-full max-w-[375px] min-h-screen" style={{ backgroundColor: '#1A2F3A', boxShadow: '0 0 30px rgba(0, 0, 0, 0.5)' }}>
