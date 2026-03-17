@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { ArrowLeft, ShieldCheck, Loader2, CreditCard, CheckCircle, XCircle } from 'lucide-react';
@@ -44,6 +44,7 @@ function PaymentContent() {
   const [checkingStatus, setCheckingStatus] = useState(false);
   const dragStartY = useRef<number>(0);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const autoPayTriggered = useRef(false);
 
   const [orderSubtotal, setOrderSubtotal] = useState<number | null>(null);
   const [orderDeliveryFee, setOrderDeliveryFee] = useState<number | null>(null);
@@ -173,7 +174,7 @@ function PaymentContent() {
     if (deltaY > 70) handleModalClose();
   };
 
-  const handlePay = async () => {
+  const handlePay = useCallback(async () => {
     setPaymentStatus('processing');
     setError(null);
 
@@ -223,8 +224,16 @@ function PaymentContent() {
       setPaymentStatus('idle');
       setError(msg);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [robokassaReady, paymentType, subscriptionPlan, subscriptionAmount, orderId, finalTotal, returnUrl, pollPaymentStatus]);
 
+  // Авто-запуск оплаты при загрузке страницы
+  useEffect(() => {
+    if (robokassaReady && !autoPayTriggered.current && paymentStatus === 'idle') {
+      autoPayTriggered.current = true;
+      handlePay();
+    }
+  }, [robokassaReady, paymentStatus, handlePay]);
 
   // Экран успешной оплаты
   if (paymentStatus === 'success') {

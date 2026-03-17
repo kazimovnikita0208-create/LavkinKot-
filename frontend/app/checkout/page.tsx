@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Calendar, Phone, DoorOpen, CreditCard, Loader2, Gift, Sparkles } from 'lucide-react';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
@@ -61,7 +61,13 @@ export default function CheckoutPage() {
 
   // Ошибки валидации
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  
+  const [showValidationBanner, setShowValidationBanner] = useState(false);
+
+  // Refs для скролла к ошибкам
+  const streetRef = useRef<HTMLDivElement>(null);
+  const dateRef = useRef<HTMLDivElement>(null);
+  const phoneRef = useRef<HTMLDivElement>(null);
+
   // Дата и время
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -181,7 +187,21 @@ export default function CheckoutPage() {
     }
 
     setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+
+    if (Object.keys(errors).length > 0) {
+      setShowValidationBanner(true);
+      setTimeout(() => setShowValidationBanner(false), 4000);
+      // Скролл к первой ошибке
+      if (errors.street || errors.house || errors.apartment) {
+        streetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (errors.selectedDate || errors.selectedTime) {
+        dateRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (errors.phone) {
+        phoneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async () => {
@@ -370,8 +390,25 @@ export default function CheckoutPage() {
       {/* MAIN */}
       <main style={{ position: 'relative', zIndex: 10, padding: '16px' }}>
         
+        {/* Баннер ошибок валидации */}
+        {showValidationBanner && (
+          <div style={{
+            marginBottom: 16, padding: '14px 16px',
+            borderRadius: 12,
+            background: 'rgba(239,68,68,0.15)',
+            border: '1px solid rgba(239,68,68,0.4)',
+            display: 'flex', alignItems: 'center', gap: 10,
+            animation: 'fadeInUp 0.3s ease',
+          }}>
+            <span style={{ fontSize: 20 }}>⚠️</span>
+            <p style={{ fontSize: 14, color: '#FCA5A5', fontWeight: 600 }}>
+              Пожалуйста, заполните все обязательные поля
+            </p>
+          </div>
+        )}
+
         {/* АДРЕС ДОСТАВКИ */}
-        <section style={{ marginBottom: 16 }}>
+        <section ref={streetRef} style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <MapPin style={{ width: 18, height: 18, color: '#F4A261' }} strokeWidth={2} />
             <h2 style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF' }}>Адрес доставки</h2>
@@ -545,7 +582,7 @@ export default function CheckoutPage() {
         </section>
 
         {/* ДАТА И ВРЕМЯ */}
-        <section style={{ marginBottom: 16 }}>
+        <section ref={dateRef} style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <Calendar style={{ width: 18, height: 18, color: '#F4A261' }} strokeWidth={2} />
             <h2 style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF' }}>Дата и время доставки</h2>
@@ -556,11 +593,12 @@ export default function CheckoutPage() {
             borderRadius: 16,
             padding: 16,
             boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+            border: (validationErrors.selectedDate || validationErrors.selectedTime) ? '1px solid rgba(239,68,68,0.5)' : '1px solid transparent',
           }}>
             {/* Дата */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#94A3B8', marginBottom: 6 }}>
-                Дата *
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: validationErrors.selectedDate ? '#FCA5A5' : '#94A3B8', marginBottom: 6 }}>
+                Дата {validationErrors.selectedDate ? `— ${validationErrors.selectedDate}` : '*'}
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                 {availableDates.map((date) => (
@@ -827,7 +865,7 @@ export default function CheckoutPage() {
         </section>
 
         {/* КОНТАКТЫ */}
-        <section style={{ marginBottom: 16 }}>
+        <section ref={phoneRef} style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <Phone style={{ width: 18, height: 18, color: '#F4A261' }} strokeWidth={2} />
             <h2 style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF' }}>Контактная информация</h2>
