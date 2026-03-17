@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { ArrowLeft, ShieldCheck, Loader2, CreditCard, CheckCircle, XCircle } from 'lucide-react';
@@ -66,19 +66,15 @@ function PaymentContent() {
   const deliveryFee = orderDeliveryFee ?? 0;
   const finalTotal = paymentType === 'subscription' ? subscriptionAmount : orderTotal + deliveryFee;
 
-  // Проверить статус оплаты прямо сейчас
+  // Проверить статус оплаты по invId конкретной транзакции (не по статусу заказа!)
+  // Это важно: заказ может быть ранее оплачен, но текущий платёж — новый
   const checkPaymentNow = useCallback(async (invId: number): Promise<boolean> => {
     try {
-      if (paymentType === 'order' && orderId) {
-        const res = await ordersApi.getOrderById(orderId);
-        return res.data?.payment_status === 'paid';
-      } else if (paymentType === 'subscription') {
-        const res = await api.get<{ status: string }>(`/payments/status/${invId}`);
-        return res.data?.status === 'paid';
-      }
+      const res = await api.get<{ status: string; type: string }>(`/payments/status/${invId}`);
+      return res.data?.status === 'paid';
     } catch { /* ignore */ }
     return false;
-  }, [orderId, paymentType]);
+  }, []);
 
   // Polling: каждые 3 секунды
   const pollPaymentStatus = useCallback(async (invId: number) => {
