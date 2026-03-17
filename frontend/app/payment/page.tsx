@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { ArrowLeft, ShieldCheck, Loader2, CreditCard, CheckCircle, XCircle } from 'lucide-react';
@@ -42,6 +42,8 @@ function PaymentContent() {
   const [currentInvId, setCurrentInvId] = useState<number | null>(null);
   const [successCountdown, setSuccessCountdown] = useState(3);
   const [checkingStatus, setCheckingStatus] = useState(false);
+  const dragStartY = useRef<number>(0);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   const [orderSubtotal, setOrderSubtotal] = useState<number | null>(null);
   const [orderDeliveryFee, setOrderDeliveryFee] = useState<number | null>(null);
@@ -77,11 +79,10 @@ function PaymentContent() {
     return false;
   }, [orderId, paymentType]);
 
-  // Polling: каждые 4 секунды проверяем оплачено ли
+  // Polling: каждые 3 секунды
   const pollPaymentStatus = useCallback(async (invId: number) => {
-    const maxAttempts = 75; // 5 минут
-    for (let i = 0; i < maxAttempts; i++) {
-      await new Promise(r => setTimeout(r, 4000));
+    for (let i = 0; i < 100; i++) {
+      await new Promise(r => setTimeout(r, 3000));
       const paid = await checkPaymentNow(invId);
       if (paid) {
         setShowModal(false);
@@ -90,6 +91,25 @@ function PaymentContent() {
       }
     }
   }, [checkPaymentNow]);
+
+  // Кнопка "Я уже оплатил" — 4 попытки с интервалом 2с (webhook может задержаться)
+  const handleManualCheck = useCallback(async () => {
+    if (!currentInvId) return;
+    setCheckingStatus(true);
+    for (let i = 0; i < 4; i++) {
+      const paid = await checkPaymentNow(currentInvId);
+      if (paid) {
+        setShowModal(false);
+        setPaymentStatus('success');
+        setCheckingStatus(false);
+        return;
+      }
+      if (i < 3) await new Promise(r => setTimeout(r, 2000));
+    }
+    setCheckingStatus(false);
+    setShowModal(false);
+    setPaymentStatus('fail');
+  }, [currentInvId, checkPaymentNow]);
 
   // Автоотсчёт и редирект после успешной оплаты
   useEffect(() => {
@@ -115,23 +135,20 @@ function PaymentContent() {
     return () => clearInterval(interval);
   }, [paymentStatus, paymentType, orderId, router]);
 
-  // Закрыть модалку — сначала проверяем статус оплаты
-  const handleModalClose = useCallback(async () => {
-    if (!currentInvId) {
-      setShowModal(false);
-      setPaymentStatus('idle');
-      return;
-    }
-    setCheckingStatus(true);
-    const paid = await checkPaymentNow(currentInvId);
-    setCheckingStatus(false);
+  // Закрыть модалку
+  const handleModalClose = useCallback(() => {
     setShowModal(false);
-    if (paid) {
-      setPaymentStatus('success');
-    } else {
-      setPaymentStatus('idle');
-    }
-  }, [currentInvId, checkPaymentNow]);
+    setPaymentStatus('idle');
+  }, []);
+
+  // Swipe-to-close по drag handle
+  const handleDragStart = (e: React.TouchEvent) => {
+    dragStartY.current = e.touches[0].clientY;
+  };
+  const handleDragEnd = (e: React.TouchEvent) => {
+    const deltaY = e.changedTouches[0].clientY - dragStartY.current;
+    if (deltaY > 70) handleModalClose();
+  };
 
   const handlePay = async () => {
     setPaymentStatus('processing');
@@ -499,139 +516,121 @@ function PaymentContent() {
             animation: 'fadeIn 0.25s ease',
           }}
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              handleModalClose();
-            }
+            if (e.target === e.currentTarget) handleModalClose();
           }}
         >
-          <div style={{
-            width: '100%',
-            maxWidth: 375,
-            margin: '0 auto',
-            background: '#F8F9FA',
-            borderRadius: '20px 20px 0 0',
-            height: '88vh',
-            display: 'flex',
-            flexDirection: 'column',
-            animation: 'slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
-            overflow: 'hidden',
-          }}>
-
-            {/* Drag handle */}
-            <div style={{
+          {/* Sheet — отдельный div, блокирует всплытие touch-событий */}
+          <div
+            ref={sheetRef}
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 375,
+              margin: '0 auto',
+              background: '#F8F9FA',
+              borderRadius: '20px 20px 0 0',
+              height: '88vh',
               display: 'flex',
-              justifyContent: 'center',
-              paddingTop: 10,
-              paddingBottom: 6,
-              background: '#FFFFFF',
-              flexShrink: 0,
-            }}>
-              <div style={{
-                width: 36, height: 4,
-                borderRadius: 2,
-                background: '#D1D5DB',
-              }} />
+              flexDirection: 'column',
+              animation: 'slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Drag handle — swipe вниз для закрытия */}
+            <div
+              onTouchStart={handleDragStart}
+              onTouchEnd={handleDragEnd}
+              style={{
+                display: 'flex', justifyContent: 'center',
+                paddingTop: 12, paddingBottom: 8,
+                background: '#FFFFFF', flexShrink: 0,
+                cursor: 'grab', touchAction: 'none',
+              }}
+            >
+              <div style={{ width: 40, height: 4, borderRadius: 2, background: '#D1D5DB' }} />
             </div>
 
             {/* Шапка */}
             <div style={{
-              padding: '10px 16px 12px',
+              padding: '8px 16px 12px',
               background: '#FFFFFF',
               borderBottom: '1px solid #EFEFEF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               flexShrink: 0,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{
                   width: 30, height: 30, borderRadius: 8,
-                  background: 'rgba(76, 175, 80, 0.12)',
+                  background: 'rgba(76,175,80,0.12)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <ShieldCheck style={{ width: 17, height: 17, color: '#4CAF50' }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: '#111', lineHeight: 1.2 }}>
-                    Безопасная оплата
-                  </p>
-                  <p style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 500 }}>
-                    Защищено Robokassa · SSL
-                  </p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#111', lineHeight: 1.2 }}>Безопасная оплата</p>
+                  <p style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 500 }}>Защищено Robokassa · SSL</p>
                 </div>
               </div>
-
               <button
                 onClick={handleModalClose}
-                disabled={checkingStatus}
                 style={{
-                  background: '#F3F4F6', border: 'none',
-                  borderRadius: '50%', width: 34, height: 34,
-                  cursor: checkingStatus ? 'default' : 'pointer',
+                  background: '#F3F4F6', border: 'none', borderRadius: '50%',
+                  width: 34, height: 34, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#6B7280', fontSize: 20, fontWeight: 300,
-                  flexShrink: 0, lineHeight: 1, opacity: checkingStatus ? 0.5 : 1,
+                  color: '#6B7280', fontSize: 20, fontWeight: 300, flexShrink: 0,
                 }}
               >
-                {checkingStatus
-                  ? <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
-                  : '×'}
+                ×
               </button>
             </div>
 
-            {/* Контейнер виджета Robokassa */}
+            {/* Контейнер виджета — scroll работает, touch не всплывает */}
             <div
               id="robokassa-widget-container"
+              onTouchStart={e => e.stopPropagation()}
+              onTouchMove={e => e.stopPropagation()}
               style={{
                 flex: 1,
-                overflowY: 'auto',
+                overflowY: 'scroll',
                 overflowX: 'hidden',
                 WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
                 background: '#FFFFFF',
+                touchAction: 'pan-y',
               }}
             />
 
-            {/* Нижняя полоска — кнопка проверки и статус */}
+            {/* Футер — кнопка "Я уже оплатил" */}
             <div style={{
               padding: '10px 16px',
               paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
               background: '#F8F9FA',
               borderTop: '1px solid #EFEFEF',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
               flexShrink: 0,
             }}>
               <button
-                onClick={async () => {
-                  if (!currentInvId) return;
-                  setCheckingStatus(true);
-                  const paid = await checkPaymentNow(currentInvId);
-                  setCheckingStatus(false);
-                  if (paid) {
-                    setShowModal(false);
-                    setPaymentStatus('success');
-                  } else {
-                    setPaymentStatus('fail');
-                    setShowModal(false);
-                  }
-                }}
+                onClick={handleManualCheck}
                 disabled={checkingStatus}
                 style={{
-                  background: 'linear-gradient(135deg, #F4A261 0%, #E89551 100%)',
-                  color: '#FFFFFF', padding: '10px 24px', borderRadius: 12,
+                  background: checkingStatus
+                    ? 'rgba(244,162,97,0.5)'
+                    : 'linear-gradient(135deg, #F4A261 0%, #E89551 100%)',
+                  color: '#FFFFFF', padding: '11px 24px', borderRadius: 12,
                   border: 'none', cursor: checkingStatus ? 'default' : 'pointer',
-                  fontWeight: 700, fontSize: 13,
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  opacity: checkingStatus ? 0.7 : 1, width: '100%', justifyContent: 'center',
+                  fontWeight: 700, fontSize: 14,
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  width: '100%', justifyContent: 'center',
                 }}
               >
                 {checkingStatus
-                  ? <><Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} /> Проверяем...</>
+                  ? <><Loader2 style={{ width: 15, height: 15, animation: 'spin 1s linear infinite' }} /> Проверяем оплату...</>
                   : '✓ Я уже оплатил'}
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <Loader2 style={{ width: 11, height: 11, color: '#9CA3AF', animation: 'spin 2s linear infinite' }} />
+                <Loader2 style={{ width: 10, height: 10, color: '#9CA3AF', animation: 'spin 2s linear infinite' }} />
                 <span style={{ fontSize: 10, color: '#9CA3AF', fontWeight: 500 }}>
-                  Статус обновляется автоматически
+                  Статус обновляется автоматически каждые 3 сек
                 </span>
               </div>
             </div>
