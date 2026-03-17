@@ -33,31 +33,47 @@ export default function CheckoutPage() {
   useTelegramBackButton();
 
   const CHECKOUT_DRAFT_KEY = 'lavkinkot_checkout_draft';
+  const SAVED_ADDRESS_KEY = 'lavkinkot_saved_address';
 
-  // Форма адреса — инициализация из localStorage (черновик)
+  // Загружаем сохранённый адрес (постоянный) или черновик
+  const getSavedAddress = () => {
+    try { return JSON.parse(localStorage.getItem(SAVED_ADDRESS_KEY) || 'null'); } catch { return null; }
+  };
+  const getDraft = () => {
+    try { return JSON.parse(localStorage.getItem(CHECKOUT_DRAFT_KEY) || '{}'); } catch { return {}; }
+  };
+
+  const savedAddr = getSavedAddress();
+  const draft = getDraft();
+  const initAddr = savedAddr || draft;
+
   const [district, setDistrict] = useState('Октябрьский');
-  const [street, setStreet] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(CHECKOUT_DRAFT_KEY) || '{}').street || ''; } catch { return ''; }
-  });
-  const [house, setHouse] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(CHECKOUT_DRAFT_KEY) || '{}').house || ''; } catch { return ''; }
-  });
-  const [entrance, setEntrance] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(CHECKOUT_DRAFT_KEY) || '{}').entrance || ''; } catch { return ''; }
-  });
-  const [floor, setFloor] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(CHECKOUT_DRAFT_KEY) || '{}').floor || ''; } catch { return ''; }
-  });
-  const [apartment, setApartment] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(CHECKOUT_DRAFT_KEY) || '{}').apartment || ''; } catch { return ''; }
-  });
+  const [street, setStreet] = useState(initAddr.street || '');
+  const [house, setHouse] = useState(initAddr.house || '');
+  const [entrance, setEntrance] = useState(initAddr.entrance || '');
+  const [floor, setFloor] = useState(initAddr.floor || '');
+  const [apartment, setApartment] = useState(initAddr.apartment || '');
+  const [rememberAddress, setRememberAddress] = useState(() => !!getSavedAddress());
 
-  // Сохраняем черновик адреса при изменении
+  // Сохраняем черновик при изменении
   useEffect(() => {
     try {
       localStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify({ street, house, entrance, floor, apartment }));
+      if (rememberAddress) {
+        localStorage.setItem(SAVED_ADDRESS_KEY, JSON.stringify({ street, house, entrance, floor, apartment }));
+      }
     } catch {}
-  }, [street, house, entrance, floor, apartment]);
+  }, [street, house, entrance, floor, apartment, rememberAddress]);
+
+  const handleRememberToggle = () => {
+    const next = !rememberAddress;
+    setRememberAddress(next);
+    if (next) {
+      try { localStorage.setItem(SAVED_ADDRESS_KEY, JSON.stringify({ street, house, entrance, floor, apartment })); } catch {}
+    } else {
+      try { localStorage.removeItem(SAVED_ADDRESS_KEY); } catch {}
+    }
+  };
 
   // Ошибки валидации
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -155,8 +171,12 @@ export default function CheckoutPage() {
     for (let i = 1; i <= 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
+      // Используем локальную дату (не UTC) чтобы избежать сдвига таймзоны
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
       dates.push({
-        value: date.toISOString().split('T')[0],
+        value: `${yyyy}-${mm}-${dd}`,
         label: date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
       });
     }
@@ -937,6 +957,44 @@ export default function CheckoutPage() {
                   transition: 'all 0.3s ease',
                 }} />
               </button>
+            </div>
+          </div>
+
+          {/* Тоггл "Запомнить адрес" */}
+          <div style={{ marginTop: 10 }}>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(45, 79, 94, 0.5) 0%, rgba(38, 73, 92, 0.4) 100%)',
+              borderRadius: 16, padding: 16,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 16 }}>📍</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF' }}>Запомнить адрес</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>
+                    {rememberAddress ? 'Адрес сохранён — будет подставлен в следующий раз' : 'Адрес будет сохранён для следующих заказов'}
+                  </p>
+                </div>
+                <button
+                  onClick={handleRememberToggle}
+                  style={{
+                    position: 'relative', width: 48, height: 28, borderRadius: 14,
+                    background: rememberAddress ? 'linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)' : 'rgba(26, 47, 58, 0.8)',
+                    border: rememberAddress ? '1px solid rgba(76, 175, 80, 0.3)' : '1px solid rgba(255,255,255,0.2)',
+                    cursor: 'pointer', flexShrink: 0,
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', top: 3,
+                    left: rememberAddress ? 23 : 3,
+                    width: 22, height: 22, borderRadius: '50%',
+                    background: '#FFFFFF',
+                    transition: 'all 0.3s ease',
+                  }} />
+                </button>
+              </div>
             </div>
           </div>
         </section>
