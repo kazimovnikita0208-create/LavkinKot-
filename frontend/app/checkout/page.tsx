@@ -269,15 +269,10 @@ export default function CheckoutPage() {
         try { localStorage.removeItem(CHECKOUT_DRAFT_KEY); } catch {}
 
         const { orders: batchOrders, batch_id } = response.data;
-        const orderIds = batchOrders.map(o => o.id).join(',');
+        const firstOrderId = batchOrders[0].id;
 
-        if (deliveryPaymentType === 'subscription' || deliveryPaymentType === 'free') {
-          router.push(`/order-confirmed?type=order&batch=true&orderIds=${orderIds}`);
-        } else {
-          // Оплата за весь batch по сумме первого заказа (с доставкой)
-          const firstOrderId = batchOrders[0].id;
-          router.push(`/payment?type=order&orderId=${firstOrderId}&batchId=${batch_id}&amount=${finalTotal}`);
-        }
+        // Всегда идём на оплату товаров — подписка покрывает только доставку
+        router.push(`/payment?type=order&orderId=${firstOrderId}&batchId=${batch_id}&amount=${finalTotal}`);
       } else {
         // Обычный заказ из одного магазина
         const orderData: import('@/lib/api').CreateOrderData = {
@@ -295,11 +290,8 @@ export default function CheckoutPage() {
         if (order) {
           clearCart();
           try { localStorage.removeItem(CHECKOUT_DRAFT_KEY); } catch {}
-          if (deliveryPaymentType === 'subscription' || deliveryPaymentType === 'free') {
-            router.push(`/order-confirmed?type=order&orderId=${order.id}`);
-          } else {
-            router.push(`/payment?type=order&orderId=${order.id}&amount=${finalTotal}`);
-          }
+          // Всегда идём на оплату товаров — подписка покрывает только доставку
+          router.push(`/payment?type=order&orderId=${order.id}&amount=${finalTotal}`);
         } else {
           alert('Ошибка при создании заказа. Попробуйте ещё раз.');
         }
@@ -1026,7 +1018,7 @@ export default function CheckoutPage() {
           }}
         >
           {isCreatingOrder && <Loader2 style={{ width: 20, height: 20, animation: 'spin 1s linear infinite' }} />}
-          {deliveryPaymentType === 'one-time' ? 'Оплатить' : 'Оформить заказ'}
+          Оплатить {finalTotal > 0 ? `${finalTotal} ₽` : ''}
         </button>
       </div>
 
