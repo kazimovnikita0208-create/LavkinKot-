@@ -22,7 +22,7 @@ const planNames: { [key: string]: string } = {
   premium: 'Премиум',
 };
 
-type PaymentStatus = 'idle' | 'processing' | 'success' | 'fail';
+type PaymentStatus = 'idle' | 'processing' | 'success' | 'fail' | 'pending_confirm';
 
 function PaymentContent() {
   const router = useRouter();
@@ -92,11 +92,11 @@ function PaymentContent() {
     }
   }, [checkPaymentNow]);
 
-  // Кнопка "Я уже оплатил" — 4 попытки с интервалом 2с (webhook может задержаться)
+  // Кнопка "Я уже оплатил" — 3 попытки × 3с = 9с, затем → pending_confirm (не fail!)
   const handleManualCheck = useCallback(async () => {
     if (!currentInvId) return;
     setCheckingStatus(true);
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) {
       const paid = await checkPaymentNow(currentInvId);
       if (paid) {
         setShowModal(false);
@@ -104,12 +104,35 @@ function PaymentContent() {
         setCheckingStatus(false);
         return;
       }
-      if (i < 3) await new Promise(r => setTimeout(r, 2000));
+      if (i < 2) await new Promise(r => setTimeout(r, 3000));
     }
     setCheckingStatus(false);
     setShowModal(false);
-    setPaymentStatus('fail');
+    // Webhook ещё не дошёл — показываем "обрабатывается", а не "не прошла"
+    setPaymentStatus('pending_confirm');
   }, [currentInvId, checkPaymentNow]);
+
+  // Ручная проверка на экране pending_confirm
+  const handleRetryCheck = useCallback(async () => {
+    if (!currentInvId) return;
+    setCheckingStatus(true);
+    const paid = await checkPaymentNow(currentInvId);
+    setCheckingStatus(false);
+    if (paid) setPaymentStatus('success');
+  }, [currentInvId, checkPaymentNow]);
+
+  // Auto-polling на экране pending_confirm каждые 5 секунд
+  useEffect(() => {
+    if (paymentStatus !== 'pending_confirm' || !currentInvId) return;
+    const interval = setInterval(async () => {
+      const paid = await checkPaymentNow(currentInvId);
+      if (paid) {
+        setPaymentStatus('success');
+        clearInterval(interval);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [paymentStatus, currentInvId, checkPaymentNow]);
 
   // Автоотсчёт и редирект после успешной оплаты
   useEffect(() => {
@@ -267,6 +290,80 @@ function PaymentContent() {
           >
             {paymentType === 'subscription' ? 'Перейти к подписке' : 'К заказу'}
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Экран "Оплата обрабатывается" — webhook ещё не пришёл, но пользователь сказал что оплатил
+  if (paymentStatus === 'pending_confirm') {
+    return (
+      <div className="w-full max-w-[375px] min-h-screen mx-auto" style={{
+        backgroundColor: '#1A2F3A', position: 'relative',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', padding: 32,
+      }}>
+        <AnimatedBackground />
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', maxWidth: 300 }}>
+          <div style={{
+            width: 90, height: 90, borderRadius: '50%',
+            background: 'rgba(244,162,97,0.15)',
+            border: '2px solid rgba(244,162,97,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 28px',
+            animation: 'fadeInUp 0.4s ease both',
+          }}>
+            <Loader2 style={{ width: 44, height: 44, color: '#F4A261', animation: 'spin 1.2s linear infinite' }} />
+          </div>
+
+          <h1 style={{
+            fontSize: 24, fontWeight: 900, color: '#FFFFFF', marginBottom: 12,
+            animation: 'fadeInUp 0.4s 0.1s ease both',
+          }}>
+            Оплата обрабатывается
+          </h1>
+
+          <p style={{
+            fontSize: 14, color: '#94A3B8', fontWeight: 500, lineHeight: 1.6, marginBottom: 32,
+            animation: 'fadeInUp 0.4s 0.2s ease both',
+          }}>
+            Ожидаем подтверждение от платёжной системы. Обычно это занимает до 1 минуты. Не закрывайте приложение.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, animation: 'fadeInUp 0.4s 0.3s ease both' }}>
+            <button
+              onClick={handleRetryCheck}
+              disabled={checkingStatus}
+              style={{
+                width: '100%',
+                background: checkingStatus
+                  ? 'rgba(244,162,97,0.4)'
+                  : 'linear-gradient(135deg, #F4A261 0%, #E89551 100%)',
+                color: '#FFFFFF', padding: '16px 24px', borderRadius: 16,
+                border: 'none', cursor: checkingStatus ? 'default' : 'pointer',
+                boxShadow: checkingStatus ? 'none' : '0 6px 20px rgba(244,162,97,0.4)',
+                fontWeight: 800, fontSize: 16,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              {checkingStatus
+                ? <><Loader2 style={{ width: 18, height: 18, animation: 'spin 1s linear infinite' }} /> Проверяем...</>
+                : '🔄 Проверить ещё раз'}
+            </button>
+
+            <button
+              onClick={() => router.push('/')}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                color: '#64748B', padding: '14px 24px', borderRadius: 16,
+                border: '1px solid rgba(100,116,139,0.3)',
+                cursor: 'pointer', fontWeight: 600, fontSize: 15,
+              }}
+            >
+              На главную
+            </button>
+          </div>
         </div>
       </div>
     );

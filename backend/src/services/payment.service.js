@@ -8,6 +8,10 @@ const PASSWORD1 = process.env.ROBOKASSA_PASSWORD1;
 const PASSWORD2 = process.env.ROBOKASSA_PASSWORD2;
 const IS_TEST = process.env.ROBOKASSA_IS_TEST === '1' ? 1 : 0;
 const ROBOKASSA_BASE_URL = 'https://auth.robokassa.ru/Merchant/Index.aspx';
+// На production backend и frontend на одном домене через Nginx
+// BACKEND_URL можно не указывать — берём FRONTEND_URL как базу
+const SITE_URL = process.env.BACKEND_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 const md5 = (str) => crypto.createHash('md5').update(str).digest('hex').toUpperCase();
 
@@ -80,7 +84,12 @@ class PaymentService {
     // Генерируем подпись
     const signature = md5(`${MERCHANT_LOGIN}:${outSum}:${invId}:${PASSWORD1}`);
 
-    // Параметры для iframe-виджета (Robokassa.StartPayment)
+    // Параметры для iframe-виджета (Robokassa.Render)
+    // ResultUrl передаём явно, чтобы Robokassa отправила webhook даже если не настроен в кабинете
+    const resultUrl = `${SITE_URL}/api/payments/robokassa/result`;
+    const successUrl = `${FRONTEND_URL}/payment/success`;
+    const failUrl = `${FRONTEND_URL}/payment/fail`;
+
     const iframeParams = {
       MerchantLogin: MERCHANT_LOGIN,
       OutSum: outSum,
@@ -90,6 +99,9 @@ class PaymentService {
       IsTest: IS_TEST,
       Culture: 'ru',
       Encoding: 'utf-8',
+      ResultUrl: resultUrl,
+      SuccessUrl: successUrl,
+      FailUrl: failUrl,
     };
 
     // Fallback redirect URL на случай если iframe не работает
