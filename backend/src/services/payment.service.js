@@ -127,7 +127,15 @@ class PaymentService {
     if (!PASSWORD2) throw new AppError('Robokassa PASSWORD2 not configured', 500);
 
     // Верифицируем подпись
-    const expected = md5(`${OutSum}:${InvId}:${PASSWORD2}`);
+    const signStr = `${OutSum}:${InvId}:${PASSWORD2}`;
+    const expected = md5(signStr);
+    console.log('[Robokassa] Signature check:', {
+      InvId,
+      OutSum,
+      received: SignatureValue.toUpperCase(),
+      expected,
+      match: expected === SignatureValue.toUpperCase(),
+    });
     if (expected !== SignatureValue.toUpperCase()) {
       throw new AppError('Invalid Robokassa signature', 400);
     }

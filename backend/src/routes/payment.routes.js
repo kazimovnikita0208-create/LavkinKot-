@@ -17,7 +17,9 @@ router.post('/robokassa/init', authMiddleware, initPayment);
 router.get('/status/:invId', authMiddleware, getPaymentStatus);
 
 // Webhook от Robokassa — без authMiddleware (Robokassa не отправляет JWT)
+// Принимаем и POST, и GET — Robokassa может использовать любой метод
 router.post('/robokassa/result', robokassaResult);
+router.get('/robokassa/result', robokassaResult);
 
 // Редиректы от Robokassa после оплаты
 router.get('/robokassa/success', robokassaSuccess);

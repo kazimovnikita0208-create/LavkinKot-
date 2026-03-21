@@ -20,16 +20,32 @@ const initPayment = asyncHandler(async (req, res) => {
  * Ответ должен быть строкой "OK{InvId}"
  */
 const robokassaResult = asyncHandler(async (req, res) => {
-  const { OutSum, InvId, SignatureValue } = req.body;
+  // Robokassa может отправить параметры в body (POST) или query (GET)
+  const params = { ...req.query, ...req.body };
+  const { OutSum, InvId, SignatureValue } = params;
+
+  console.log('[Robokassa webhook] received:', {
+    method: req.method,
+    OutSum,
+    InvId,
+    SignatureValue: SignatureValue ? SignatureValue.substring(0, 8) + '...' : 'missing',
+    bodyKeys: Object.keys(req.body),
+    queryKeys: Object.keys(req.query),
+  });
 
   if (!OutSum || !InvId || !SignatureValue) {
+    console.error('[Robokassa webhook] missing params:', { OutSum, InvId, hasSignature: !!SignatureValue });
     return res.status(400).send('bad request');
   }
 
-  const response = await paymentService.handleResult({ OutSum, InvId, SignatureValue });
-
-  // Robokassa ожидает строку "OK{InvId}" при успехе
-  res.send(response);
+  try {
+    const response = await paymentService.handleResult({ OutSum, InvId, SignatureValue });
+    console.log('[Robokassa webhook] success:', response);
+    res.send(response);
+  } catch (err) {
+    console.error('[Robokassa webhook] error:', err.message);
+    res.status(500).send('error');
+  }
 });
 
 /**
