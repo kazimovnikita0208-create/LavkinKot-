@@ -87,7 +87,8 @@ class PaymentService {
     // Параметры для iframe-виджета (Robokassa.Render)
     // ResultUrl передаём явно, чтобы Robokassa отправила webhook даже если не настроен в кабинете
     const resultUrl = `${SITE_URL}/api/payments/robokassa/result`;
-    const successUrl = `${FRONTEND_URL}/payment/success`;
+    // Минимальная HTML-страница, которая мгновенно шлёт postMessage в родительское окно
+    const successUrl = `${FRONTEND_URL}/payment-success-callback.html`;
     const failUrl = `${FRONTEND_URL}/payment/fail`;
 
     const iframeParams = {

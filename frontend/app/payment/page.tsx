@@ -162,6 +162,19 @@ function PaymentContent() {
     }
   }, [paymentStatus]);
 
+  // Мгновенный перехват успеха через postMessage от iframe Robokassa
+  // Срабатывает когда Robokassa редиректит iframe на наш payment-success-callback.html
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'ROBOKASSA_PAYMENT_SUCCESS') {
+        setShowModal(false);
+        setPaymentStatus('success');
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   // Закрыть модалку
   const handleModalClose = useCallback(() => {
     setShowModal(false);

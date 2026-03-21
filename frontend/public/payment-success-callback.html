@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0;background:#fff;">
+<script>
+  var params = new URLSearchParams(window.location.search);
+  var invId = params.get('InvId') || params.get('invId');
+  var outSum = params.get('OutSum') || params.get('outSum');
+  // Мгновенно сообщаем родительской странице об успешной оплате
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'ROBOKASSA_PAYMENT_SUCCESS', invId: invId, outSum: outSum }, '*');
+  }
+</script>
+</body>
+</html>
