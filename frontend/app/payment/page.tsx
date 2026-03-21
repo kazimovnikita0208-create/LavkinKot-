@@ -155,6 +155,13 @@ function PaymentContent() {
     return () => clearInterval(interval);
   }, [paymentStatus, paymentType, orderId, router]);
 
+  // Гарантированно закрываем модалку при любом финальном статусе
+  useEffect(() => {
+    if (paymentStatus === 'success' || paymentStatus === 'fail' || paymentStatus === 'pending_confirm') {
+      setShowModal(false);
+    }
+  }, [paymentStatus]);
+
   // Закрыть модалку
   const handleModalClose = useCallback(() => {
     setShowModal(false);
@@ -607,7 +614,7 @@ function PaymentContent() {
       </main>
 
       {/* ─── МОДАЛЬНОЕ ОКНО ОПЛАТЫ ─────────────────────────────────── */}
-      {showModal && (
+      {showModal && paymentStatus === 'processing' && (
         <div
           style={{
             position: 'fixed', inset: 0, zIndex: 100,
