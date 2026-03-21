@@ -70,7 +70,8 @@ function PaymentContent() {
   // Это важно: заказ может быть ранее оплачен, но текущий платёж — новый
   const checkPaymentNow = useCallback(async (invId: number): Promise<boolean> => {
     try {
-      const res = await api.get<{ status: string; type: string }>(`/payments/status/${invId}`);
+      // Cache-busting: добавляем timestamp чтобы браузер не кэшировал 304
+      const res = await api.get<{ status: string; type: string }>(`/payments/status/${invId}?_t=${Date.now()}`);
       return res.data?.status === 'paid';
     } catch { /* ignore */ }
     return false;
