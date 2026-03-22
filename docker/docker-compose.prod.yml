@@ -12,6 +12,7 @@ services:
       - "4000:4000"
     networks:
       - lavkinkot
+      - supabase_default
 
   frontend:
     build:
@@ -57,9 +58,12 @@ services:
       - ../.env
     networks:
       - lavkinkot
+      - supabase_default
     depends_on:
       - backend
 
 networks:
   lavkinkot:
     driver: bridge
+  supabase_default:
+    external: true
