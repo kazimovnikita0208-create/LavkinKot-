@@ -11,20 +11,10 @@ import { useTelegramBackButton } from '@/hooks/useTelegram';
 
 // Функция для получения изображения товара
 const getProductImage = (product: Product): string => {
-  if (product.image_url && !product.image_url.startsWith('/images/')) {
+  if (product.image_url) {
     return product.image_url;
   }
-  // Fallback изображения по категориям
-  const categoryImages: Record<string, string> = {
-    'Молочные продукты': 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=400&fit=crop&q=80',
-    'Мясо': 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400&h=400&fit=crop&q=80',
-    'Овощи': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=400&fit=crop&q=80',
-    'Напитки': 'https://images.unsplash.com/photo-1437418747212-8d9709afab22?w=400&h=400&fit=crop&q=80',
-    'Хлеб': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=400&fit=crop&q=80',
-    'Выпечка': 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&h=400&fit=crop&q=80',
-    'Торты': 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=400&fit=crop&q=80',
-  };
-  return categoryImages[product.category] || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=400&fit=crop&q=80';
+  return '/placeholder-product.png';
 };
 
 export default function ShopPage() {
