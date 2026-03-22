@@ -45,6 +45,7 @@ services:
       - /var/www/certbot:/var/www/certbot:ro
     networks:
       - lavkinkot
+      - supabase_default
     depends_on:
       - backend
       - frontend
